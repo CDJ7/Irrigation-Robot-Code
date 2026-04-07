@@ -1,0 +1,301 @@
+// ======================================
+// ======== Motor & Pump Controls ========
+// ======================================
+
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <IBusBM.h>
+
+// WiFi Credentials --------------------------------+
+const char* ssid        = "Linksys08736";
+const char* password    = "kbygr7ycna";
+WiFiClient espClient;
+
+// MQTT Server Details -----------------------------+
+const char* mqtt_server = "192.168.1.104";
+const int   mqtt_port   = 1883;
+PubSubClient client(espClient);
+
+// MQTT TOPICS:
+const char* MQTT_MOVE_CMD = "robot/control";
+const char* MQTT_PUMP_CMD = "robot/pump";
+
+// ==================================================
+// Function Prototypes -----------------------------+
+void setupWiFi();
+void reconnect();
+void setThrottle(int dacPin, float duty01);
+void pumpControls(bool on);
+void set3Speed(int gear);
+void setReverse(bool side, bool rev);
+void setBrake(bool on);
+void move_control(int forward, int steer, bool stop);
+void callback(char* topic, byte* payload, unsigned int length);
+void ibusLoop();
+
+IBusBM ibus;
+int mode = 0;
+bool armed = false;
+
+// ---------------- PIN DEFINITIONS ----------------
+
+#define IBUS_RX_PIN 16
+
+// DAC
+#define L_DAC 25
+#define R_DAC 26
+
+#define PUMP_PIN    17    
+
+// Motor control pins
+#define REV_LEFT    32
+#define REV_RIGHT   33
+#define SP_HIGH     23
+#define SP_LOW      22      
+#define BRAKE       21
+
+const float Vmin    = 1.15;
+const float Vmax    = 3.30;
+const float VdacMax = 3.30;
+
+const bool LEFTM = true;
+const bool RIGHTM = false;
+
+float L_throttle;
+float R_throttle;
+
+bool L_rev;
+bool R_rev;
+
+bool pumpState = false;      
+bool lastPumpSwitch = false;  
+
+// ---------------- READ IBUS CHANNEL ----------------
+int readChannel(byte channelInput, int minLimit, int maxLimit, int defaultValue) {
+  uint16_t ch = ibus.readChannel(channelInput);
+  if (ch < 100) return defaultValue;
+  return map(ch, 1000, 2000, minLimit, maxLimit);
+}
+
+// ---------------- SETUP ----------------
+void setup() {
+  Serial.begin(115200);
+  delay(3000);
+
+  pinMode(REV_LEFT, OUTPUT);
+  pinMode(REV_RIGHT, OUTPUT);
+  pinMode(BRAKE, OUTPUT);
+  pinMode(PUMP_PIN, OUTPUT);
+ 
+  pinMode(SP_HIGH, INPUT);
+  pinMode(SP_LOW, INPUT);
+
+  setupWiFi();
+
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+
+  delay(1000);
+
+  Serial2.begin(115200, SERIAL_8N1, IBUS_RX_PIN, -1);
+  delay(100);  
+  ibus.begin(Serial2);
+  Serial.println("iBus receiver initialized.");
+
+  // --- FIXED: Both Reverse Pins must start LOW for Forward ---
+  digitalWrite(REV_LEFT, LOW);
+  digitalWrite(REV_RIGHT, LOW); // Was HIGH, now LOW
+  digitalWrite(BRAKE, LOW);
+  set3Speed(1);
+  digitalWrite(PUMP_PIN, LOW);
+  Serial.println("All commands off/Forward Mode Initialized");
+
+  delay(1000);
+}
+
+// ---------------- MAIN LOOP ----------------
+void loop()
+{
+  int arm = readChannel(4, 0, 100, 0);  
+  mode = readChannel(5, 0, 100, 0);    
+
+  if (arm != 0) {
+    if(!armed) {
+        Serial.println("Armed!");
+        armed = true;
+        setBrake(false);
+    }
+
+    if (mode != 0) {
+      if (!client.connected()) {
+          reconnect();
+      } else {
+          client.loop();
+      }
+    } else {
+      ibusLoop();
+    }
+
+  } else {
+    if(armed) {
+      Serial.println("Disarmed! Stopping motors.");
+      setThrottle(L_DAC, 0);
+      setThrottle(R_DAC, 0);
+      digitalWrite(REV_LEFT, LOW);
+      digitalWrite(REV_RIGHT, LOW);
+      digitalWrite(PUMP_PIN, LOW);
+      setBrake(true);
+      armed = false;
+    }
+    delay(50);
+  }
+}
+
+// ---------------- WIFI & MQTT FUNCTIONS ----------------
+void setupWiFi() {
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected to WiFi");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void reconnect() {
+  Serial.print("Attempting MQTT connection...");
+  if (client.connect("ESP32Client1")) {
+    Serial.println("connected");
+    client.subscribe(MQTT_MOVE_CMD);
+    client.subscribe(MQTT_PUMP_CMD);
+  } else {
+    Serial.print("failed, rc=");
+    Serial.print(client.state());
+    Serial.println(" try again in 5 seconds");
+    delay(5000);
+  }
+}
+
+void callback(char* topic, byte* payload, unsigned int length){
+  if (strcmp(topic, MQTT_MOVE_CMD) == 0){
+    char move_message[8] = {0};
+    memcpy(move_message, payload, min(length, sizeof(move_message)-1));
+
+    if (strcmp(move_message, "0") == 0) set3Speed(1);
+    else if (strcmp(move_message, "1") == 0) set3Speed(2);
+    else if (strcmp(move_message, "2") == 0) set3Speed(3);
+
+    if(strcmp(move_message, "D") == 0)      move_control(50, 0, false);
+    else if(strcmp(move_message, "B") == 0) move_control(-50, 0, false);
+    else if(strcmp(move_message, "L") == 0) move_control(0, -50, false);
+    else if(strcmp(move_message, "R") == 0) move_control(0, 50, false);
+    else if(strcmp(move_message, "P") == 0) move_control(0, 0, true);
+  }
+
+  if (strcmp(topic, MQTT_PUMP_CMD) == 0){
+    char pump_message[4] = {0};
+    memcpy(pump_message, payload, min(length, sizeof(pump_message)-1));
+    digitalWrite(PUMP_PIN, (atoi(pump_message) == 1) ? HIGH : LOW);
+  }
+}
+
+// ---------------- CONTROLLER LOGIC ----------------
+void ibusLoop()
+{
+  int pump_channel = readChannel(7, 0, 100, 0);  
+  int forward = readChannel(1, -100, 100, 0);
+  int steer   = readChannel(0, -100, 100, 0);  
+  int speed_channel = readChannel(6, 0, 100, 0);
+
+  float magnitude = sqrt((float)forward * forward + (float)steer * steer);
+
+  if (magnitude < 15) {  
+      forward = 0;
+      steer = 0;
+  } else {
+      float steerScale = 1.0 - (abs(forward) / 100.0) * 0.5;
+      steer = (int)(steer * steerScale);
+  }
+
+  bool pumpSwitch = (pump_channel > 50);
+  if (pumpSwitch != lastPumpSwitch) {
+      pumpControls(pumpSwitch);
+  }
+  lastPumpSwitch = pumpSwitch;
+
+  if (speed_channel < 25) set3Speed(1);
+  else if (speed_channel > 75) set3Speed(3);
+  else set3Speed(2);
+
+  // --- FIXED: ARCADE DRIVE MATH (Forward must be the primary component) ---
+  float L_cmd = forward + steer;
+  float R_cmd = forward - steer;
+
+  L_throttle = constrain(L_cmd, -100, 100);
+  R_throttle = constrain(R_cmd, -100, 100);
+
+  // --- Output Logic ---
+  setReverse(LEFTM, (L_throttle < 0));
+  setReverse(RIGHTM, (R_throttle < 0));
+
+  setThrottle(L_DAC, (abs(L_throttle) / 100.0));
+  setThrottle(R_DAC, (abs(R_throttle) / 100.0));
+
+  delay(20); // Faster response time
+}
+
+// ---------------- HELPER FUNCTIONS ----------------
+void setThrottle(int dacPin, float duty01) {
+  duty01 = constrain(duty01, 0, 1);
+  float v = Vmin + duty01 * (Vmax - Vmin);
+  uint8_t code = (uint8_t)((v / VdacMax) * 255.0f);
+  dacWrite(dacPin, code);
+}
+
+void set3Speed(int gear) {
+  pinMode(SP_LOW, INPUT);
+  pinMode(SP_HIGH, INPUT);
+
+  if (gear == 1) {        
+    pinMode(SP_LOW, OUTPUT);
+    digitalWrite(SP_LOW, LOW);
+  } else if (gear == 3) {
+    pinMode(SP_HIGH, OUTPUT);
+    digitalWrite(SP_HIGH, LOW);
+  }
+}
+
+void setReverse(bool side, bool rev){
+  digitalWrite(side ? REV_LEFT : REV_RIGHT,  rev ? HIGH : LOW);
+}
+
+void setBrake(bool on){
+  digitalWrite(BRAKE, on ? HIGH : LOW);
+}
+
+void move_control(int forward, int steer, bool stop)
+{
+  if (stop) {
+    setThrottle(L_DAC, 0);
+    setThrottle(R_DAC, 0);
+    return;
+  }
+
+  float L_cmd = forward + steer;
+  float R_cmd = forward - steer;
+
+  setReverse(LEFTM, (L_cmd < 0));
+  setReverse(RIGHTM, (R_cmd < 0));
+
+  setThrottle(L_DAC, abs(L_cmd) / 100.0);
+  setThrottle(R_DAC, abs(R_cmd) / 100.0);
+}
+
+void pumpControls(bool on) {
+    digitalWrite(PUMP_PIN, on ? HIGH : LOW);
+}
