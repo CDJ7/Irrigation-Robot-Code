@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="279.4mm" height="215.9mm" viewBox="0 0 279.4 215.9">
+<rect width="279.4" height="215.9" fill="white"/>
+<g fill="black">
+<rect x="14.700" y="16.450" width="25.000" height="25.000"/>
+<rect x="64.700" y="16.450" width="25.000" height="25.000"/>
+<rect x="114.700" y="16.450" width="25.000" height="25.000"/>
+<rect x="164.700" y="16.450" width="25.000" height="25.000"/>
+<rect x="214.700" y="16.450" width="25.000" height="25.000"/>
+<rect x="39.700" y="41.450" width="25.000" height="25.000"/>
+<rect x="89.700" y="41.450" width="25.000" height="25.000"/>
+<rect x="139.700" y="41.450" width="25.000" height="25.000"/>
+<rect x="189.700" y="41.450" width="25.000" height="25.000"/>
+<rect x="239.700" y="41.450" width="25.000" height="25.000"/>
+<rect x="14.700" y="66.450" width="25.000" height="25.000"/>
+<rect x="64.700" y="66.450" width="25.000" height="25.000"/>
+<rect x="114.700" y="66.450" width="25.000" height="25.000"/>
+<rect x="164.700" y="66.450" width="25.000" height="25.000"/>
+<rect x="214.700" y="66.450" width="25.000" height="25.000"/>
+<rect x="39.700" y="91.450" width="25.000" height="25.000"/>
+<rect x="89.700" y="91.450" width="25.000" height="25.000"/>
+<rect x="139.700" y="91.450" width="25.000" height="25.000"/>
+<rect x="189.700" y="91.450" width="25.000" height="25.000"/>
+<rect x="239.700" y="91.450" width="25.000" height="25.000"/>
+<rect x="14.700" y="116.450" width="25.000" height="25.000"/>
+<rect x="64.700" y="116.450" width="25.000" height="25.000"/>
+<rect x="114.700" y="116.450" width="25.000" height="25.000"/>
+<rect x="164.700" y="116.450" width="25.000" height="25.000"/>
+<rect x="214.700" y="116.450" width="25.000" height="25.000"/>
+<rect x="39.700" y="141.450" width="25.000" height="25.000"/>
+<rect x="89.700" y="141.450" width="25.000" height="25.000"/>
+<rect x="139.700" y="141.450" width="25.000" height="25.000"/>
+<rect x="189.700" y="141.450" width="25.000" height="25.000"/>
+<rect x="239.700" y="141.450" width="25.000" height="25.000"/>
+<rect x="14.700" y="166.450" width="25.000" height="25.000"/>
+<rect x="64.700" y="166.450" width="25.000" height="25.000"/>
+<rect x="114.700" y="166.450" width="25.000" height="25.000"/>
+<rect x="164.700" y="166.450" width="25.000" height="25.000"/>
+<rect x="214.700" y="166.450" width="25.000" height="25.000"/>
+</g>
+<text x="139.7" y="200.4" font-size="4" text-anchor="middle" font-family="sans-serif">9x6 inner corners, 25 mm squares (nominal). Print at 100% scale, then measure a square.</text>
+</svg>

@@ -1,0 +1,20 @@
+# systemd unit for the vision server. Installed by install_service.sh (needs sudo -- run it yourself).
+[Unit]
+Description=Delta Robot vision server (stereo camera + depth + YOLO)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deltarobot
+SupplementaryGroups=video
+WorkingDirectory=/home/deltarobot/delta_robot/pi
+# Use the venv's Python so the right packages are found.
+ExecStart=/home/deltarobot/delta_robot/venv/bin/python /home/deltarobot/delta_robot/pi/pi_camera_server.py
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

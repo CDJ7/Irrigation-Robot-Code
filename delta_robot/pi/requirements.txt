@@ -1,0 +1,7 @@
+# Install inside the venv on the Pi:   pip install -r requirements.txt
+numpy
+pyyaml
+opencv-python-headless>=4.8   # "headless" = no GUI libraries (we only use SSH)
+ultralytics                   # YOLO. Pulls in PyTorch (large download, takes a few minutes on a Pi)
+# Only needed on the Pi if you want to run/export NCNN models there (Phase 5 exports on Colab instead):
+# ncnn
