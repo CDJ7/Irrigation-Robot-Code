@@ -6,13 +6,13 @@ Everything below runs **on the Pi** (over SSH). Nothing here needs `sudo` except
 ## 1. Copy the code to the Pi (from your Windows PC, in this project folder)
 
 ```
-scp -r pi deltarobot@deltapi.local:delta_robot/
+scp -r pi deltarobot@deltapi.local:Delta_Robot/
 ```
 
 ## 2. Create the Python environment (once, on the Pi)
 
 ```
-cd ~/delta_robot
+cd ~/Delta_Robot
 python3 -m venv --system-site-packages venv
 source venv/bin/activate
 pip install -r pi/requirements.txt        # ultralytics pulls in PyTorch: several minutes
@@ -32,7 +32,7 @@ fuser -v /dev/video0             # should print nothing   (apt: psmisc)
 ## 4. First run
 
 ```
-cd ~/delta_robot/pi
+cd ~/Delta_Robot/pi
 python pi_camera_server.py --fake      # no camera: synthetic test scene, checks the software
 python pi_camera_server.py             # real camera
 ```
@@ -56,7 +56,7 @@ If the frame rate is low, try `fourcc: MJPG` (or `YUYV`) in `config.yaml` → `c
 3. `python calibrate_stereo.py capture --square-mm 25` and move the board slowly through the
    picture — corners and edges, near and far, tilted ±30°. See the header of
    `calibrate_stereo.py` for the full checklist. To see what the camera sees over SSH:
-   `scp deltarobot@deltapi.local:delta_robot/pi/calib_preview.jpg .`
+   `scp deltarobot@deltapi.local:Delta_Robot/pi/calib_preview.jpg .`
 4. `python calibrate_stereo.py solve --square-mm 25` — aim for stereo RMS < ~0.5 px.
    It prints the measured **baseline** (compare with a ruler) and the nearest measurable distance
    for your `num_disparities`; it saves `calibration/stereo_calib.npz`, which the server loads.
@@ -80,7 +80,7 @@ python pi_camera_server.py --capture-dataset ~/berries --interval 1
 ```
 
 Saves the left-eye **grayscale** PNG that YOLO actually sees (rectified if calibrated). Copy the folder
-to your PC for labeling (Roboflow etc.): `scp -r deltarobot@deltapi.local:delta_robot/pi/dataset_images .`
+to your PC for labeling (Roboflow etc.): `scp -r deltarobot@deltapi.local:Delta_Robot/pi/dataset_images .`
 
 > Reminder: the camera is monochrome, so a model trained on these images can find strawberries
 > but **cannot tell ripe from unripe**. A colour camera would be needed for ripeness.

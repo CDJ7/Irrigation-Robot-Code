@@ -10,12 +10,13 @@
     - Enables/disables the drivers and reports current step position
 
   It talks to the Python "master" GUI over USB serial at 115200 baud,
-  using this line-based text protocol (matches the Python GUI you gave me):
+  using this line-based text protocol:
 
     M <s1> <s2> <s3> <duration_ms>   -> move all 3 axes to absolute step
                                          counts s1,s2,s3, arriving together
                                          after duration_ms milliseconds
     H                                -> run homing routine on all 3 axes
+    Z                                -> Zero coordinates (force homed state)
     EN 1                             -> enable all drivers
     EN 0                             -> disable all drivers
     STOP                             -> abort any move immediately
@@ -82,7 +83,8 @@ const uint16_t DIR_SETUP_US = 10;
 // Homing parameters — TUNE THESE for your machine before running.
 // Homing direction: -1 or +1, whichever way drives the arm toward the
 // limit switch. Delta robots usually home "up" (effector rises to top).
-const int8_t HOME_DIR[NUM_AXES] = {-1, -1, -1};
+// Changed to +1 to stop crashing the other direction.
+const int8_t HOME_DIR[NUM_AXES] = {1, 1, 1}; 
 
 // Step delay while homing (controls homing speed). Larger = slower/safer.
 const uint16_t HOMING_STEP_DELAY_US = 900;
@@ -341,21 +343,6 @@ void handleCommand(String line) {
     }
     startMove(s0, s1, s2, dur);
 
-  } else if (line == "Z") {
-    // Manual zero -- redefines wherever the arm currently is as step 0,
-    // WITHOUT physically homing via limit switches. Only use this once
-    // you've visually verified the arm is actually in the correct
-    // position (e.g. after using raw/manual moves to align it).
-    if (moving) {
-      Serial.println("ERR BUSY");
-      return;
-    }
-    for (uint8_t i = 0; i < NUM_AXES; i++) {
-      currentSteps[i] = 0;
-    }
-    Serial.println("ZEROED");
-    sendPos();
-
   } else if (line == "H") {
     if (moving) {
       Serial.println("ERR BUSY");
@@ -363,6 +350,13 @@ void handleCommand(String line) {
     }
     runHoming();
 
+  } else if (line == "Z") {
+    // Force reset of current coordinates to 0 without moving
+    for (uint8_t i = 0; i < NUM_AXES; i++) {
+      currentSteps[i] = 0;
+    }
+    Serial.println("HOMED");
+    
   } else if (line.startsWith("EN")) {
     if (line.indexOf('1') >= 0) {
       setDriverEnable(true);

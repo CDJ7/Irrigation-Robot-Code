@@ -24,7 +24,7 @@ STEP 2  Capture pairs:
           * cover the distance range where strawberries will actually be
         Over SSH you cannot see the picture, so the script writes calib_preview.jpg with
         the detected corners drawn on it; copy it to your PC to look:
-            scp deltarobot@deltapi.local:delta_robot/pi/calib_preview.jpg .
+            scp deltarobot@deltapi.local:Delta_Robot/pi/calib_preview.jpg .
 
 STEP 3  Solve:
             python calibrate_stereo.py solve --square-mm 25

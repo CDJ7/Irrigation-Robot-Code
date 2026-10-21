@@ -1,7 +1,0 @@
-__pycache__/
-*.pyc
-venv/
-# bulky/personal capture data (the solved stereo_calib.npz IS kept)
-pi/calibration/images/
-pi/dataset_images/
-pi/calib_preview.jpg

@@ -1,5 +1,5 @@
 # config.yaml -- settings for pi_camera_server.py (Pi vision only, never moves the robot)
-# Paths that are not absolute are relative to this file's folder (~/delta_robot/pi on the Pi).
+# Paths that are not absolute are relative to this file's folder (~/Delta_Robot/pi on the Pi).
 
 camera:
   device: /dev/video0

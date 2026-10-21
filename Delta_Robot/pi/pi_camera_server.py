@@ -59,7 +59,7 @@ DESIGN
   disparity is computed (StereoSGBM). YOLO runs on the rectified left eye, so a box's
   pixels line up exactly with the disparity map.
 
-RUN:   source ~/delta_robot/venv/bin/activate
+RUN:   source ~/Delta_Robot/venv/bin/activate
        python pi_camera_server.py                       # normal
        python pi_camera_server.py --capture-dataset     # also save training images
        python pi_camera_server.py --fake                # synthetic camera, for testing

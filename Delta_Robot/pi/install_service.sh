@@ -1,6 +1,6 @@
 #!/bin/sh
 # Installs and starts the vision server as a systemd service. RUN THIS YOURSELF ON THE PI:
-#     cd ~/delta_robot/pi && sh install_service.sh
+#     cd ~/Delta_Robot/pi && sh install_service.sh
 # It uses sudo. Read it first -- it only does the steps listed below.
 set -e
 
