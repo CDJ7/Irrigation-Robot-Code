@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+venv/
+# bulky/personal capture data (the solved stereo_calib.npz IS kept)
+pi/calibration/images/
+pi/dataset_images/
+pi/calib_preview.jpg
+
+# --- never commit these (secrets, big files, reference clones) ---
+third_party/
+.env
+*.key
+*.pem
+secrets*
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*_ncnn_model/
+datasets/
+*.mp4
+*.avi
+*.mov

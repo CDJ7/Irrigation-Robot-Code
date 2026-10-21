@@ -1,0 +1,77 @@
+# config.yaml -- settings for pi_camera_server.py (Pi vision only, never moves the robot)
+# Paths that are not absolute are relative to this file's folder (~/Delta_Robot/pi on the Pi).
+
+camera:
+  device: /dev/video0
+  # The stereo camera outputs ONE frame holding both eyes side by side:
+  # 640x240 total = two 320x240 images.
+  width: 640
+  height: 240
+  # Pixel format. "" = leave the camera's default. If FPS is low, try "MJPG"
+  # (compressed, needs less USB bandwidth); "YUYV" is the uncompressed alternative.
+  fourcc: ""
+  fps: 0                # 0 = leave the camera's default
+  buffer_size: 1        # keep V4L2's queue short so frames are fresh, not seconds old
+  auto_exposure: 3      # 3 = auto (same as main_harvester.py). null = don't touch
+
+stereo:
+  # Written by calibrate_stereo.py. If the file is missing the server still runs, but
+  # in UNCALIBRATED mode (no rectification, nominal numbers below) and it tells clients
+  # so ("calibrated": false) -- the GUI must refuse to pick in that mode.
+  calibration_file: calibration/stereo_calib.npz
+  # Nominal values used ONLY when uncalibrated. Copied from main_harvester.py and NOT
+  # verified (the baseline was never measured with a ruler).
+  nominal_focal_px: 600.0
+  nominal_baseline_mm: 60.0
+  matcher: sgbm         # "sgbm" (better, smoother) or "bm" (faster, noisier)
+  # How many pixels of horizontal shift the matcher searches. Must be a multiple of 16.
+  # Nearest measurable distance = focal_px * baseline_mm / num_disparities.
+  # (calibrate_stereo.py prints this number for you.) Bigger = can see closer, slower.
+  num_disparities: 128
+  min_disparity: 0
+  block_size: 5         # odd number; bigger = smoother but blurrier at edges
+  uniqueness_ratio: 10
+  speckle_window: 100
+  speckle_range: 2
+  disp12_max_diff: 1
+  pre_filter_cap: 31
+  # Disparities below this (in pixels) are treated as "no depth" (too far / noise).
+  min_valid_disparity: 1.0
+
+depth:
+  # Depth of a detection = MEDIAN disparity over the middle part of its box, ignoring holes.
+  patch_fraction: 0.5   # use the central 50% (width and height) of the bounding box
+  min_valid_fraction: 0.2   # need at least 20% of that patch to have valid disparity
+  min_pixels: 9
+  min_z_mm: 100.0       # readings outside this range are reported as null
+  max_z_mm: 2000.0
+
+detection:
+  enabled: true
+  # Swap in a trained model by changing this one line, e.g. models/strawberry_ncnn_model
+  model: yolov8n.pt     # STOCK model: no strawberry class -> automation must refuse it
+  confidence: 0.3
+  imgsz: 320
+  max_detections: 20
+  # Only detections whose class name is in this list are flagged "allowed": true.
+  # The GUI may only pick allowed detections.
+  allowed_classes: [strawberry]
+  # true = never even report other classes (e.g. "person"). false = report all but flag them.
+  report_only_allowed: false
+
+network:
+  tcp_host: 0.0.0.0
+  tcp_port: 8485        # GUI client (camera_client.py)
+  http_port: 5000       # browser MJPEG viewer, null = off
+  jpeg_quality: 70
+  send_timeout_s: 5.0   # a client that cannot take data for this long is dropped
+  target_fps: 15        # processing is capped at this rate
+  idle_fps: 2           # rate while nobody is watching (saves Pi CPU)
+
+dataset:
+  # Dataset capture: saves the left-eye grayscale image (exactly what YOLO sees) so you
+  # can label it for training. Also switchable with:  --capture-dataset [DIR]
+  enabled: false
+  dir: dataset_images
+  interval_s: 2.0
+  max_images: 0         # 0 = unlimited

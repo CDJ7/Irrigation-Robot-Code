@@ -1,0 +1,67 @@
+# CLAUDE.md — Delta Robot (strawberry harvester: depth camera + YOLO)
+
+Read this first in every new session. Keep it updated as work proceeds. Human-friendly overview: `README.md`.
+
+## Goal and architecture
+A PC GUI picks strawberries with a 3-motor delta robot. **Pi = vision only. PC GUI = the ONLY thing that controls the ESP32.**
+```
+cameras -> Pi 5 (deltapi.local, user deltarobot): pi/pi_camera_server.py --TCP 8485 J/V/D--> PC: gui/ --USB serial--> ESP32 -> 3x DM542T -> 3x NEMA23
+```
+Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a small link class that can be swapped for TCP.
+
+## Safety rules (always)
+* NEVER run anything that moves the robot, and NEVER flash the ESP32, without asking and waiting for confirmation.
+* Keep/restore GUI safety: workspace box (NOT in the current GUI -> port from archive v3), IK-unreachable check, `busy` flag,
+  `xyz_valid` after raw moves, E-STOP visible and prominent on every screen.
+* Automation only for allowed strawberry classes; refuse models without one (stock YOLO sees people).
+* The GUI "E-STOP" is software only (sends STOP; the user's current "emergency" is the Disable-Motors button, which lets arms drop).
+  A hardware E-stop cutting driver power is planned. Never claim the software button is a safety-rated stop.
+* Ask before sudo, apt, config-file edits, reboots, flashing, pushing to main / opening PRs.
+* No secrets, weights, datasets or videos in git. Simulated ESP32 + simulated camera first for all GUI/automation features.
+
+## Decisions made
+* Camera: build around the **Arducam ToF (240x180, HQVGA)** first (user may use USB or ToF; CSI vs USB still unchecked).
+  A **1.0 MP USB camera (model no. 202511028880000100, unidentified otherwise)** comes later -> make the capture source pluggable,
+  so the detection image can be ToF amplitude now or a USB image + aligned depth later. Mounting: top-down or slightly angled.
+* Geometry: f = 3 in = 76.2 mm (final TBD). rf/re/e are UNCONFIRMED: current GUI file says 150/280/50 mm, the older v3 said
+  254/342.9/76.2 mm. Make them settings; measure. Gearbox 47:1; microsteps unknown (steps/rev = 200 x microsteps x 47).
+* Baseline code = the GitHub versions (user confirmed they are the most current): gui/Delta_Robot_GUI.py (Tkinter, no workspace
+  box, no camera tab) and the ESP32 firmware (homing dir +1, `Z` replies HOMED, no busy check on Z/EN).
+* Folder is `Delta_Robot/` (capitalised, per user) inside CDJ7/Irrigation-Robot-Code. Don't touch anything else in that repo
+  (irrBot-version1.ino and file `2` there are an unrelated MQTT robot with Wi-Fi credentials committed).
+* Arducam SDK: PyPI wheel `ArducamDepthCamera` 0.1.24 is self-contained (aarch64 cp38-cp314, needs numpy<2 -> opencv-python-headless<4.12).
+  Python API: Connection.CSI|USB, FrameType.DEPTH, DepthData.depth_data(mm)/confidence_data/amplitude_data,
+  Control.RANGE/HFLIP/VFLIP/INTRINSIC_FX,FY,CX,CY (value/100). Its Install_dependencies.sh edits /boot/firmware/config.txt, sets
+  camera_auto_detect=0, adds a 3rd-party apt repo, uses `sudo pip` -> do not run blindly. Verify on hardware: RANGE units
+  (examples disagree: 4000 vs 4), whether HQVGA confidence is meaningful, depth = Z vs radial, image mirroring (must be right-handed).
+* Licences: Ultralytics AGPL-3.0; pyqt-on-camera MIT (PC CamTouch Team); Arducam_tof_camera repo has NO licence -> reference only.
+
+## Environment notes
+* Sessions so far ran on a cloud Linux VM: **no ssh to the Pi, cannot run anything on the Pi, no Windows**. Anything needing the
+  Pi / ToF / ESP32 is untested. References live in `<repo>/third_party/` (excluded via .git/info/exclude; never commit).
+* Source repo clone (read only): /home/user/greatroboticslab/deltarobot.
+
+## Status
+| Phase | State |
+|---|---|
+| 1 Review | done -> docs/PHASE1_REVIEW.md |
+| (scaffold) Delta_Robot folder + README | done |
+| Earlier stereo-USB Pi server (pi/) | written; passes synthetic tests only; NOT run on the Pi |
+| 2 Pi set-up for ToF + VNC | blocked: needs Pi access + user approval for sudo/boot-config/reboot |
+| 3 ToF vision server | not started |
+| 4 PyQt6 GUI | not started |
+| 5 Calibration tools | not started |
+| 6 Harvest state machine | not started |
+| 7 Firmware | not started |
+| 8 Docs + final push | partly (README, docs); final push needs user's choice main vs branch/PR |
+
+## Calibration status
+Stereo: n/a for ToF. Intrinsics: from SDK (to verify). Home/offsets/HOME_XYZ: uncalibrated (HOME_XYZ placeholder (0,0,-200)).
+Camera-to-robot transform: not done. Microsteps, final f, rf/re/e: TBD.
+
+## How to run (today)
+See README.md ("Running what exists today") and pi/README.md. Self-tests: `cd pi && python tests/test_server_fake.py` (+ the other two).
+
+## Open questions for the user
+Microstep DIP setting; confirm rf/re/e; ToF on CSI or USB (Pi hardware output); vacuum pin when firmware phase starts;
+repo licence; main vs branch+PR for the final push.
