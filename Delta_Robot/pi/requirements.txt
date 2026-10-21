@@ -1,7 +1,10 @@
-# Install inside the venv on the Pi:   pip install -r requirements.txt
-numpy
+# Install inside the venv on the Pi (tof/setup_venv.sh does the first four lines for you):
+#   pip install -r requirements.txt
+numpy<2                         # the Arducam wheel requires numpy < 2
+opencv-python-headless<4.12     # 4.12+ needs numpy >= 2. "headless" = no GUI libraries (we only use SSH)
 pyyaml
-opencv-python-headless>=4.8   # "headless" = no GUI libraries (we only use SSH)
-ultralytics                   # YOLO. Pulls in PyTorch (large download, takes a few minutes on a Pi)
-# Only needed on the Pi if you want to run/export NCNN models there (Phase 5 exports on Colab instead):
-# ncnn
+ArducamDepthCamera              # ToF camera SDK (self-contained aarch64 wheel from PyPI)
+ultralytics                     # YOLO (AGPL-3.0). Large download: pulls in PyTorch.
+# NOTE: ultralytics also depends on "opencv-python" (the GUI build), which pip installs next to the headless one
+# and can break `import cv2` on a Pi without desktop libraries. If that happens:
+#   pip uninstall -y opencv-python && pip install --force-reinstall "opencv-python-headless<4.12"

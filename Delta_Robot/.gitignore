@@ -5,6 +5,7 @@ venv/
 pi/calibration/images/
 pi/dataset_images/
 pi/calib_preview.jpg
+pi/tof/tof_check_out/
 
 # --- never commit these (secrets, big files, reference clones) ---
 third_party/

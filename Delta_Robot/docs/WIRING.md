@@ -26,6 +26,21 @@
 * Homing direction is `+1` on all axes in the current firmware (changed from `−1` by trial). Homing has never been
   validated — see `PHASE1_REVIEW.md`.
 
+## DM542T DIP switches (as reported by the project owner)
+
+Switches **3, 4, 7 and 8 are ON; 1, 2, 5 and 6 are OFF** (assumed identical on all three drivers — please confirm).
+Decoded with the standard DM542T table (**check it against the table printed on your driver; clone drivers can differ**):
+
+| Switches | Setting | Meaning |
+|---|---|---|
+| SW5 OFF, SW6 OFF, SW7 ON, SW8 ON | **3200 pulses per motor revolution** | 16 microsteps × 200 full steps |
+| SW1 OFF, SW2 OFF, SW3 ON | about **2.37 A peak** (≈1.7 A RMS) | check against your motors' rated current |
+| SW4 ON | normally "full current at standstill" | holds the arms firmly; the motors get warm |
+
+**Steps per arm revolution = 3200 × 47 (gearbox) = 150 400**, i.e. **417.78 steps per degree**.
+The current Tkinter GUI's default `Steps/rev = 3200` ignores the gearbox: set it to **150400** until the new GUI (separate
+motor-step / microstep / gearbox fields) replaces it. At that resolution a 30° arm move is about 12 500 steps.
+
 ## Not wired yet
 
 * **Vacuum gripper** — only an idea; no pin or driver chosen.

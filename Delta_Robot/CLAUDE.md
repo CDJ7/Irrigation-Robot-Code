@@ -23,9 +23,12 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 * Camera: build around the **Arducam ToF (240x180, HQVGA)** first (user may use USB or ToF; CSI vs USB still unchecked).
   A **1.0 MP USB camera (model no. 202511028880000100, unidentified otherwise)** comes later -> make the capture source pluggable,
   so the detection image can be ToF amplitude now or a USB image + aligned depth later. Mounting: top-down or slightly angled.
-* Geometry: f = 3 in = 76.2 mm (final TBD). rf/re/e are UNCONFIRMED: current GUI file says 150/280/50 mm, the older v3 said
-  254/342.9/76.2 mm. Make them settings; measure. Gearbox 47:1; microsteps unknown (steps/rev = 200 x microsteps x 47).
-* Baseline code = the GitHub versions (user confirmed they are the most current): gui/Delta_Robot_GUI.py (Tkinter, no workspace
+* Geometry (user decision): f = 3 in = 76.2 mm (final TBD); rf/re/e = current GUI values 150/280/50 mm (older v3 said 254/342.9/76.2;
+  measure once). Make them settings. Gearbox 47:1. DM542T DIP: SW3,4,7,8 ON (others OFF) -> by the standard table 3200 pulses/rev
+  (16 microsteps), ~2.37 A peak -> **150 400 steps per arm revolution = 417.78 steps/deg** (verify the DIP table on the driver label;
+  confirm all 3 drivers identical). Current Tkinter GUI default Steps/rev=3200 is wrong (47x too small).
+* Camera decision (user): **ToF** ("we are doing tof"). Baseline = repo GitHub versions ("use the repo, it will be fine"); still add the
+  workspace box (user's safety list requires it). Baseline code = the GitHub versions (user confirmed they are the most current): gui/Delta_Robot_GUI.py (Tkinter, no workspace
   box, no camera tab) and the ESP32 firmware (homing dir +1, `Z` replies HOMED, no busy check on Z/EN).
 * Folder is `Delta_Robot/` (capitalised, per user) inside CDJ7/Irrigation-Robot-Code. Don't touch anything else in that repo
   (irrBot-version1.ino and file `2` there are an unrelated MQTT robot with Wi-Fi credentials committed).
@@ -47,7 +50,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | 1 Review | done -> docs/PHASE1_REVIEW.md |
 | (scaffold) Delta_Robot folder + README | done |
 | Earlier stereo-USB Pi server (pi/) | written; passes synthetic tests only; NOT run on the Pi |
-| 2 Pi set-up for ToF + VNC | blocked: needs Pi access + user approval for sudo/boot-config/reboot |
+| 2 Pi set-up for ToF + VNC | tools written + tested vs stand-in SDK (pi/tof/, docs/PI_SETUP.md); **waiting for the user to run them on the Pi** (no Pi access from here; sudo/boot-config/reboot need approval) |
 | 3 ToF vision server | not started |
 | 4 PyQt6 GUI | not started |
 | 5 Calibration tools | not started |
@@ -63,5 +66,5 @@ Camera-to-robot transform: not done. Microsteps, final f, rf/re/e: TBD.
 See README.md ("Running what exists today") and pi/README.md. Self-tests: `cd pi && python tests/test_server_fake.py` (+ the other two).
 
 ## Open questions for the user
-Microstep DIP setting; confirm rf/re/e; ToF on CSI or USB (Pi hardware output); vacuum pin when firmware phase starts;
+Confirm DIP table vs driver label + all 3 drivers identical; ToF on CSI or USB (Pi output of docs/PI_SETUP.md step 1+3); vacuum pin when firmware phase starts;
 repo licence; main vs branch+PR for the final push.
