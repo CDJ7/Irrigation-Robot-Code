@@ -20,6 +20,12 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 * No secrets, weights, datasets or videos in git. Simulated ESP32 + simulated camera first for all GUI/automation features.
 
 ## Decisions made
+* **CAMERA FINDING (supersedes the ToF decision):** the Pi's inspection (user's PowerShell paste) shows NO ToF camera. Only
+  `lsusb` 32e4:9282 "3D Global Shutter Camera" (UVC, /dev/video0): dual ~1 MP global-shutter stereo, side-by-side modes
+  2560x800/2560x720/1600x600/1280x480/640x240 (MJPG up to 120 fps; YUYV <=15 fps at 1280x480). No CSI camera. Pi = Debian 13
+  trixie, Python 3.13.5, SSH over the Ethernet-shared link 192.168.137.128 (use the IP, not deltapi.local; it can change).
+  Plan: stereo path, config camera 1280x480 MJPG, re-calibrate at that size. Keep ToF code optional. Still ask the user to
+  confirm whether a ToF camera exists. (The user could not install Claude Code on the PC; work proceeds by copy-paste of Pi output.)
 * Camera: build around the **Arducam ToF (240x180, HQVGA)** first (user may use USB or ToF; CSI vs USB still unchecked).
   A **1.0 MP USB camera (model no. 202511028880000100, unidentified otherwise)** comes later -> make the capture source pluggable,
   so the detection image can be ToF amplitude now or a USB image + aligned depth later. Mounting: top-down or slightly angled.
@@ -50,7 +56,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | 1 Review | done -> docs/PHASE1_REVIEW.md |
 | (scaffold) Delta_Robot folder + README | done |
 | Earlier stereo-USB Pi server (pi/) | written; passes synthetic tests only; NOT run on the Pi |
-| 2 Pi set-up for ToF + VNC | tools written + tested vs stand-in SDK (pi/tof/, docs/PI_SETUP.md); **waiting for the user to run them on the Pi** (no Pi access from here; sudo/boot-config/reboot need approval) |
+| 2 Pi set-up (stereo path now; ToF only if one turns up) + VNC | tools written + tested vs stand-in SDK (pi/tof/, docs/PI_SETUP.md); **waiting for the user to run them on the Pi** (no Pi access from here; sudo/boot-config/reboot need approval) |
 | 3 ToF vision server | not started |
 | 4 PyQt6 GUI | not started |
 | 5 Calibration tools | not started |

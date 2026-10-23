@@ -7,6 +7,44 @@ Commands marked **[sudo]** change the system. Read them first; none is required 
 
 ---
 
+## UPDATE: what the Pi actually found (read this first)
+
+The Pi's own inspection showed **no ToF camera**. The only camera is a **USB stereo camera**: `lsusb` ID `32e4:9282`
+"3D Global Shutter Camera", a standard UVC device (`/dev/video0`) with two ~1 MP global-shutter eyes side by side
+(modes up to 2560x800, i.e. 1280x800 per eye). No CSI camera is present. The Pi runs Debian 13 (trixie), Python 3.13.
+Unless you do own a ToF camera that is simply not connected or powered, **the stereo camera is the path forward**,
+and the ToF steps below (sections 2–4) can be skipped.
+
+### Stereo path — step by step
+
+1. **On your PC** (PowerShell, normal window), get the latest files onto the Pi:
+   ```
+   cd $HOME\Irrigation-Robot-Code
+   git pull
+   scp -r Delta_Robot deltarobot@192.168.137.128:~/
+   ```
+2. **On the Pi** (ssh in), create the environment and check the camera:
+   ```
+   sh ~/Delta_Robot/pi/tof/setup_venv.sh        # venv + numpy/OpenCV (the ToF SDK it also installs is simply unused)
+   source ~/Delta_Robot/venv/bin/activate
+   cd ~/Delta_Robot/pi
+   python camera_check.py
+   python camera_check.py --save 1280x480
+   ```
+   Paste the table. To look at the pictures, run on your PC: `scp deltarobot@192.168.137.128:Delta_Robot/pi/camera_check_out/*.png .`
+3. **Test the depth pipeline without YOLO** (no big download yet):
+   ```
+   python pi_camera_server.py --no-yolo
+   ```
+   Open `http://192.168.137.128:5000` in a browser on the PC: left = camera, right = depth (it says UNCALIBRATED until step 4).
+4. **Calibrate** (needs the printed checkerboard; steps in `pi/README.md`, section 5). Do it at the final mode (1280x480).
+5. **YOLO** comes last: `pip install ultralytics` (large) and a strawberry model; with the stock model the system
+   correctly refuses to pick anything.
+
+Nothing in the stereo path needs `sudo`, a boot-file edit or a reboot.
+
+---
+
 ## 1. Tell me what is plugged in (read-only, no sudo)
 
 ```

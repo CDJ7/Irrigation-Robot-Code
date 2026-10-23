@@ -3,13 +3,15 @@
 
 camera:
   device: /dev/video0
-  # The stereo camera outputs ONE frame holding both eyes side by side:
-  # 640x240 total = two 320x240 images.
-  width: 640
-  height: 240
-  # Pixel format. "" = leave the camera's default. If FPS is low, try "MJPG"
-  # (compressed, needs less USB bandwidth); "YUYV" is the uncompressed alternative.
-  fourcc: ""
+  # The stereo camera ("3D Global Shutter Camera", USB 32e4:9282) outputs ONE frame holding both eyes side by side.
+  # Modes it advertises (frame size -> each eye): 640x240 -> 320x240, 1280x480 -> 640x480, 1600x600 -> 800x600,
+  # 2560x720 -> 1280x720, 2560x800 -> 1280x800 (about 1 MP per eye). MJPG supports all of them (up to 120 fps);
+  # YUYV only up to 15 fps at 1280x480. Run camera_check.py to measure what your Pi really delivers.
+  # More pixels = finer depth but a slower pipeline. 1280x480 is the starting point.
+  # NOTE: the stereo calibration is tied to this size -- re-run calibrate_stereo.py after changing it.
+  width: 1280
+  height: 480
+  fourcc: "MJPG"
   fps: 0                # 0 = leave the camera's default
   buffer_size: 1        # keep V4L2's queue short so frames are fresh, not seconds old
   auto_exposure: 3      # 3 = auto (same as main_harvester.py). null = don't touch
