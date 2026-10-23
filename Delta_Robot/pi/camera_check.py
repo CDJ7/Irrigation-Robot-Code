@@ -118,7 +118,7 @@ def run(argv=None, make_camera: Optional[Callable[[dict], object]] = None) -> in
     if a.save:
         fps_list = fps_list[:1]
 
-    head = f"{'mode':<14}{'asked fps':>9}{'agreed':>8}{'real fps':>9}{'delivered':>11}{'each eye':>10}{'corrupt':>8}  {'gray':<5} note"
+    head = f"{'mode':<14}{'asked fps':>9}{'agreed':>8}{'real fps':>9}{'lost':>6}{'delivered':>11}{'each eye':>10}{'corrupt':>8}  {'gray':<5} note"
     print(head)
     print("-" * len(head))
     saved = None
@@ -128,7 +128,7 @@ def run(argv=None, make_camera: Optional[Callable[[dict], object]] = None) -> in
             label = f"{w}x{h} {fc}"
             asked = "default" if fps == 0 else str(fps)
             if "error" in r:
-                print(f"{label:<14}{asked:>9}{'--':>8}{'--':>9}{'--':>11}{'--':>10}{r['corrupt']:>8}  {'--':<5} {r['error']}")
+                print(f"{label:<14}{asked:>9}{'--':>8}{'--':>9}{'--':>6}{'--':>11}{'--':>10}{r['corrupt']:>8}  {'--':<5} {r['error']}")
                 continue
             notes = []
             if (r["w"], r["h"]) != (w, h):
@@ -136,7 +136,9 @@ def run(argv=None, make_camera: Optional[Callable[[dict], object]] = None) -> in
             if r["corrupt"]:
                 notes.append("BROKEN FRAMES")
             agreed = "n/a" if np.isnan(r["agreed_fps"]) else f"{r['agreed_fps']:.0f}"
-            print(f"{label:<14}{asked:>9}{agreed:>8}{r['fps']:>9.1f}{str(r['w']) + 'x' + str(r['h']):>11}"
+            # 'lost' = share of the frames the camera promised that never arrived (a healthy link shows ~0%)
+            lost = "n/a" if (np.isnan(r["agreed_fps"]) or r["agreed_fps"] <= 0) else f"{max(0.0, 1 - r['fps'] / r['agreed_fps']) * 100:.0f}%"
+            print(f"{label:<14}{asked:>9}{agreed:>8}{r['fps']:>9.1f}{lost:>6}{str(r['w']) + 'x' + str(r['h']):>11}"
                   f"{r['eye']:>10}{r['corrupt']:>8}  {'yes' if r['gray'] else 'NO':<5} {' '.join(notes)}")
             for m in r["other_msgs"]:
                 print(f"      message: {m}")
