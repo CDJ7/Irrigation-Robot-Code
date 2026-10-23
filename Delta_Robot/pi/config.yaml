@@ -12,7 +12,7 @@ camera:
   width: 1280
   height: 480
   fourcc: "MJPG"
-  fps: 0                # 0 = leave the camera's default
+  fps: 30               # asked frame rate. 0 = camera default, which for this camera may be 120 fps and gave broken JPEGs (unverified fix: run camera_check.py)
   buffer_size: 1        # keep V4L2's queue short so frames are fresh, not seconds old
   auto_exposure: 3      # 3 = auto (same as main_harvester.py). null = don't touch
 

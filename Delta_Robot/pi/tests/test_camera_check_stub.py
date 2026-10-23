@@ -13,6 +13,8 @@ class FakeCam:
     def read(self):
         w, h = self.cfg["width"], self.cfg["height"]
         if (w, h) == (1600, 600): w, h = 1280, 480             # pretend this mode silently gives another size
+        if (w, h) == (1280, 480) and self.cfg["fps"] == 0:     # pretend the default rate gives broken JPEGs
+            os.write(2, b"Corrupt JPEG data: premature end of data segment\n")
         eye = self.rng.integers(0, 255, (h, w // 2), np.uint8)
         both = np.hstack([eye, np.roll(eye, -5, axis=1)])
         return np.dstack([both] * 3)
@@ -21,12 +23,15 @@ class FakeCam:
 out = tempfile.mkdtemp()
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf):
-    rc = cc.run(["--seconds", "0.2", "--out", out], make_camera=FakeCam)
+    rc = cc.run(["--seconds", "0.2", "--fps", "0,30", "--out", out], make_camera=FakeCam)
 text = buf.getvalue(); print(text)
 assert rc == 0
 assert "1280x480 MJPG" in text and "640x480" in text and "yes" in text
 assert "cannot open the camera" in text                       # 2560 modes reported, not crashed
 assert "SIZE DIFFERS FROM REQUEST" in text
+assert "BROKEN FRAMES" in text and "premature end" not in text      # counted, not printed
+rows = [l for l in text.splitlines() if l.startswith("1280x480 MJPG")]
+assert len(rows) == 2 and "BROKEN FRAMES" in rows[0] and "BROKEN FRAMES" not in rows[1], rows
 with contextlib.redirect_stdout(io.StringIO()):
     cc.run(["--save", "1280x480", "--seconds", "0.2", "--out", out], make_camera=FakeCam)
 for f in ("left.png", "right.png", "pair.png"):
