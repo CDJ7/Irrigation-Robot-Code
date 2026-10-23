@@ -20,12 +20,21 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 * No secrets, weights, datasets or videos in git. Simulated ESP32 + simulated camera first for all GUI/automation features.
 
 ## Decisions made
+* **CAMERA FINDING (supersedes the ToF decision):** the Pi's inspection (user's PowerShell paste) shows NO ToF camera. Only
+  `lsusb` 32e4:9282 "3D Global Shutter Camera" (UVC, /dev/video0): dual ~1 MP global-shutter stereo, side-by-side modes
+  2560x800/2560x720/1600x600/1280x480/640x240 (MJPG up to 120 fps; YUYV <=15 fps at 1280x480). No CSI camera. Pi = Debian 13
+  trixie, Python 3.13.5, SSH over the Ethernet-shared link 192.168.137.128 (use the IP, not deltapi.local; it can change).
+  Plan: stereo path, config camera 1280x480 MJPG, re-calibrate at that size. Keep ToF code optional. Still ask the user to
+  confirm whether a ToF camera exists. (The user could not install Claude Code on the PC; work proceeds by copy-paste of Pi output.)
 * Camera: build around the **Arducam ToF (240x180, HQVGA)** first (user may use USB or ToF; CSI vs USB still unchecked).
   A **1.0 MP USB camera (model no. 202511028880000100, unidentified otherwise)** comes later -> make the capture source pluggable,
   so the detection image can be ToF amplitude now or a USB image + aligned depth later. Mounting: top-down or slightly angled.
-* Geometry: f = 3 in = 76.2 mm (final TBD). rf/re/e are UNCONFIRMED: current GUI file says 150/280/50 mm, the older v3 said
-  254/342.9/76.2 mm. Make them settings; measure. Gearbox 47:1; microsteps unknown (steps/rev = 200 x microsteps x 47).
-* Baseline code = the GitHub versions (user confirmed they are the most current): gui/Delta_Robot_GUI.py (Tkinter, no workspace
+* Geometry (user decision): f = 3 in = 76.2 mm (final TBD); rf/re/e = current GUI values 150/280/50 mm (older v3 said 254/342.9/76.2;
+  measure once). Make them settings. Gearbox 47:1. DM542T DIP: SW3,4,7,8 ON (others OFF) -> by the standard table 3200 pulses/rev
+  (16 microsteps), ~2.37 A peak -> **150 400 steps per arm revolution = 417.78 steps/deg** (verify the DIP table on the driver label;
+  confirm all 3 drivers identical). Current Tkinter GUI default Steps/rev=3200 is wrong (47x too small).
+* Camera decision (user): **ToF** ("we are doing tof"). Baseline = repo GitHub versions ("use the repo, it will be fine"); still add the
+  workspace box (user's safety list requires it). Baseline code = the GitHub versions (user confirmed they are the most current): gui/Delta_Robot_GUI.py (Tkinter, no workspace
   box, no camera tab) and the ESP32 firmware (homing dir +1, `Z` replies HOMED, no busy check on Z/EN).
 * Folder is `Delta_Robot/` (capitalised, per user) inside CDJ7/Irrigation-Robot-Code. Don't touch anything else in that repo
   (irrBot-version1.ino and file `2` there are an unrelated MQTT robot with Wi-Fi credentials committed).
@@ -47,7 +56,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | 1 Review | done -> docs/PHASE1_REVIEW.md |
 | (scaffold) Delta_Robot folder + README | done |
 | Earlier stereo-USB Pi server (pi/) | written; passes synthetic tests only; NOT run on the Pi |
-| 2 Pi set-up for ToF + VNC | blocked: needs Pi access + user approval for sudo/boot-config/reboot |
+| 2 Pi set-up (stereo path now; ToF only if one turns up) + VNC | tools written + tested vs stand-in SDK (pi/tof/, docs/PI_SETUP.md); **waiting for the user to run them on the Pi** (no Pi access from here; sudo/boot-config/reboot need approval) |
 | 3 ToF vision server | not started |
 | 4 PyQt6 GUI | not started |
 | 5 Calibration tools | not started |
@@ -63,5 +72,5 @@ Camera-to-robot transform: not done. Microsteps, final f, rf/re/e: TBD.
 See README.md ("Running what exists today") and pi/README.md. Self-tests: `cd pi && python tests/test_server_fake.py` (+ the other two).
 
 ## Open questions for the user
-Microstep DIP setting; confirm rf/re/e; ToF on CSI or USB (Pi hardware output); vacuum pin when firmware phase starts;
+Confirm DIP table vs driver label + all 3 drivers identical; ToF on CSI or USB (Pi output of docs/PI_SETUP.md step 1+3); vacuum pin when firmware phase starts;
 repo licence; main vs branch+PR for the final push.

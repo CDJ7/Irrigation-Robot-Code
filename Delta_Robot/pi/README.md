@@ -29,6 +29,13 @@ pgrep -af main_harvester.py      # should print nothing
 fuser -v /dev/video0             # should print nothing   (apt: psmisc)
 ```
 
+## 3b. Check what the camera delivers
+
+```
+python camera_check.py                 # table of modes: real size, real fps, grayscale?
+python camera_check.py --save 1280x480 # also saves left/right/pair pictures to camera_check_out/
+```
+
 ## 4. First run
 
 ```

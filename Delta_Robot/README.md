@@ -11,12 +11,12 @@ program, the Raspberry Pi vision server, and the ESP32 motor firmware.
 ## How the pieces fit together
 
 ```
-   ┌──────────────────────┐  USB camera / ToF depth camera
-   │  Cameras (planned:   │
-   │  Arducam ToF, later  │
-   │  a USB colour cam)   │
+   ┌──────────────────────┐  USB stereo camera (found on the Pi);
+   │  Cameras: USB stereo │  an Arducam ToF camera would be an
+   │  (2 x ~1 MP, gray);  │  optional extra depth source.
+   │  ToF = optional      │
    └──────────┬───────────┘
-              │ USB / CSI
+              │ USB
    ┌──────────▼───────────┐   Wi-Fi / Ethernet, TCP port 8485    ┌───────────────────────┐
    │  Raspberry Pi 5      │ ──────────────────────────────────▶ │  Windows PC           │
    │  pi/ : VISION ONLY   │   J = detections (JSON)             │  gui/ : the ONLY      │
@@ -60,11 +60,15 @@ only moves.** The Pi never sends motor commands, and only the PC talks to the ES
 | `pi/calibrate_stereo.py`, `pi/make_checkerboard.py`, `pi/checkerboard_9x6_25mm_letter.svg` | Stereo-camera calibration (checkerboard) tools. Only needed for the stereo camera, not for a ToF camera. | stereo only |
 | `pi/fake_camera.py` | A pretend camera, so the server can be tested without hardware (`python pi_camera_server.py --fake`). | — |
 | `pi/tests/` | Self-tests that run on any computer (no Pi, no camera, no robot). | passing |
+| `pi/camera_check.py` | **Headless check of the stereo camera**: measures every mode (real frame size, real fps, grayscale?) and saves left/right pictures. | written; tested only with a fake camera |
+| `pi/tof/tof_check.py` | **Headless test of the Arducam ToF camera** (works over SSH): prints resolution, intrinsics, frame rate and the distance at the centre pixel, runs a flat-wall check, and saves depth/confidence/amplitude pictures. | written; tested only against a stand-in SDK |
+| `pi/tof/setup_venv.sh` | Creates the Python virtual environment and installs the ToF SDK into it (no `sudo`). | not yet run on a Pi |
 | `pi/delta-vision.service`, `pi/install_service.sh` | Run the vision server automatically at boot (systemd). **You run the install script yourself; it uses `sudo`.** | not yet run on a Pi |
 | `pi/requirements.txt` | Python packages for the Pi (install inside a virtual environment). | — |
 | **`firmware/`** | **Code that runs on the ESP32.** | |
 | `firmware/Delta_Robot_ESP32/Delta_Robot_ESP32.ino` | Receives text commands over USB, makes the step pulses for the three motors so all arms arrive together, runs homing with limit switches. Open this folder in the Arduino IDE (the sketch must live in a folder of the same name). | **Original, unmodified.** |
 | **`docs/`** | Documentation. | |
+| `docs/PI_SETUP.md` | Step-by-step Raspberry Pi setup: what to check, installing the ToF SDK, testing the camera, the CSI boot overlay, VNC. | checklist, not yet run on the Pi |
 | `docs/PROTOCOL.md` | The serial commands (PC ↔ ESP32) and the network messages (Pi → PC). | — |
 | `docs/WIRING.md` | Which ESP32 pin goes where, as read from the firmware. | needs checking against the real wiring |
 | `docs/PHASE1_REVIEW.md` | A review of bugs and risks found in the original code, ranked by how dangerous they are. **Read this before running the robot.** | — |
@@ -78,7 +82,7 @@ projects), model weights (`*.pt`), datasets, videos, and anything with passwords
 | Area | State |
 |---|---|
 | Pi vision server (stereo USB camera, YOLO, JSON detections, multi-client) | Code written; passes self-tests with a **synthetic** camera. **Not yet run on the real Pi or camera.** |
-| Arducam ToF camera support | **Not started.** The ToF camera has not been connected to the assistant's tools; CSI vs USB is still to be checked. |
+| Camera | The Pi's own inspection found **only a USB stereo camera** ("3D Global Shutter Camera", 2 × ~1 MP) and **no ToF camera**. The stereo server fits it; ToF tools are kept in case a ToF camera is connected later. |
 | New PyQt6 GUI | **Not started.** `gui/` is still the original Tkinter program. |
 | Calibration tools in the GUI (gearbox, home angles, camera→robot) | **Not started.** |
 | Automated harvesting | **Not started.** |
@@ -99,6 +103,7 @@ The motors are NEMA 23 steppers behind 47:1 gearboxes. They can hurt you.
   Keep it that way.
 * **Camera Tracking in the current GUI moves the robot to random points every second.** It is a
   simulator. The rebuilt GUI will keep simulators only as explicit test modes.
+* The current GUI's `Steps/rev` default (3200) ignores the 47:1 gearbox (**use 150400**); XYZ moves would otherwise be 47× too small.
 * The current GUI has **no workspace limits**. A bounded "workspace box" existed in an earlier
   version (`archive/original_files/delta_robot_combined_v3.py`) and will be ported back.
 * **Automated picking may only target strawberry detections**, and must refuse a model that has no
@@ -129,20 +134,22 @@ ESP32 board, and upload. *Flashing changes what the motors do — do it delibera
 ## Hardware facts used so far
 
 * Raspberry Pi 5 (8 GB), host `deltapi.local`, user `deltarobot`.
-* Cameras: Arducam ToF depth camera (240×180) planned first; a 1.0-megapixel USB camera
-  (model no. 202511028880000100) is to be supported later. Mounted top-down or at a slight angle.
-* Motors: 3× NEMA 23 with **47:1 gearboxes**, driven by 3× DM542T from an ESP32.
-  The DM542T microstep setting (DIP switches) is **not recorded yet**.
-* Robot geometry: base radius **f = 3 in (76.2 mm)** for now (final design not decided). The arm
-  lengths in the current GUI (`rf = 150`, `re = 280`, `e = 50` mm) disagree with an earlier version
-  (254 / 342.9 / 76.2 mm) — **measure and confirm them.**
+* Camera found on the Pi: **USB stereo camera "3D Global Shutter Camera"** (USB ID `32e4:9282`): two global-shutter eyes side by
+  side, up to 2560×800 (1280×800 per eye, ~1 MP). It is most likely the "1.0-megapixel USB camera, model no. 202511028880000100".
+  **No Arducam ToF camera has been detected** (a USB ToF camera needs its own 5 V / 2 A supply). Mounting: top-down or slightly angled.
+* Motors: 3× NEMA 23 with **47:1 gearboxes**, driven by 3× DM542T from an ESP32. DIP switches 3, 4, 7, 8 are ON, which
+  (standard DM542T table) means **3200 pulses per motor revolution** → **150 400 steps per arm revolution**
+  (417.78 steps/degree). The current Tkinter GUI's default `Steps/rev = 3200` is therefore wrong — use 150400.
+* Robot geometry: base radius **f = 3 in (76.2 mm)** for now (final design not decided); arm lengths from the current GUI:
+  bicep `rf = 150`, forearm `re = 280`, effector `e = 50` mm. (An older GUI used 254 / 342.9 / 76.2 mm — **measure all of these
+  once**, they are the basis of every XYZ move.)
 * ESP32 connects to the PC by USB now; Wi-Fi later. The vacuum gripper is only an idea so far.
 
 ## Roadmap
 
 1. Review of the original code — done (`docs/PHASE1_REVIEW.md`).
-2. Pi set-up for the ToF camera and remote viewing (needs `sudo`, a config-file edit and a reboot — only with the owner's approval).
-3. Vision server around the ToF camera (depth + confidence, YOLO, `J`/`V`/`D` stream, dataset capture).
+2. Pi set-up (stereo camera path; ToF only if a ToF camera turns up) and remote viewing — *tools and checklist written; waiting to be run on the Pi* (needs `sudo`, possibly a config-file edit and a reboot, only with the owner's approval).
+3. Vision server: the stereo version exists (real depth after calibration, YOLO, `J`/`V`/`D` stream, dataset capture); it needs running and calibrating on the Pi. A ToF source would be added only if a ToF camera is connected.
 4. New PyQt6 GUI (dark theme, always-visible E-STOP, camera tab, settings saved to a file).
 5. Calibration tools (gearbox/microsteps, home angles, camera→robot transform).
 6. Automated harvesting state machine (tested in simulation first).
