@@ -1,0 +1,6 @@
+# Install on the Windows PC (the machine that runs the GUI):
+#   pip install -r requirements.txt
+pyserial          # ESP32 serial link
+pillow            # shows camera pictures in Tkinter
+numpy
+opencv-python     # decodes the camera stream

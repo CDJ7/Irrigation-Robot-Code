@@ -11,8 +11,11 @@ camera:
   # NOTE: the stereo calibration is tied to this size -- re-run calibrate_stereo.py after changing it.
   width: 1280
   height: 480
-  fourcc: "MJPG"
-  fps: 30               # asked frame rate. 0 = camera default, which for this camera may be 120 fps and gave broken JPEGs (unverified fix: run camera_check.py)
+  # YUYV = uncompressed video: it cannot have broken-JPEG damage. 15 fps is this camera's maximum in YUYV at 1280x480.
+  # (MJPG gave broken frames while the lens caps were on / in the dark; with light it looked fine in a first test, but
+  # YUYV is the safe default. Compare modes with camera_check.py.)
+  fourcc: "YUYV"
+  fps: 15               # asked frame rate. 0 = camera default
   buffer_size: 1        # keep V4L2's queue short so frames are fresh, not seconds old
   auto_exposure: 3      # 3 = auto (same as main_harvester.py). null = don't touch
 
@@ -49,7 +52,9 @@ depth:
   max_z_mm: 2000.0
 
 detection:
-  enabled: true
+  # OFF until ultralytics is installed (pip install ultralytics) and a strawberry model exists. With it off the server
+  # still streams video + depth, and reports no detections. Set to true to turn YOLO on.
+  enabled: false
   # Swap in a trained model by changing this one line, e.g. models/strawberry_ncnn_model
   model: yolov8n.pt     # STOCK model: no strawberry class -> automation must refuse it
   confidence: 0.3

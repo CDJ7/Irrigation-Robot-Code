@@ -53,6 +53,26 @@ Self-tests (no hardware): `python tests/test_server_fake.py`, `tests/test_calibr
 
 If the frame rate is low, try `fourcc: MJPG` (or `YUYV`) in `config.yaml` → `camera:`.
 
+## 4b. Stream the camera to the GUI on your PC
+
+1. **On the Pi** (ssh in):
+   ```
+   source ~/Delta_Robot/venv/bin/activate
+   cd ~/Delta_Robot/pi
+   python pi_camera_server.py
+   ```
+   It prints `Listening: TCP 8485, browser http://deltapi.local:5000` and then a status line every 10 seconds
+   (frames per second, milliseconds spent on depth). Leave it running; Ctrl+C stops it. Only one program can use the camera.
+2. **Quick check without the GUI:** open `http://192.168.137.128:5000` in a browser on your PC (left = camera,
+   right = depth).
+3. **In the GUI** (on your PC): `pip install -r gui/requirements.txt`, then `python gui/Delta_Robot_GUI.py`, open the
+   **Live Camera (Pi)** tab, check the address (`192.168.137.128`), click **Connect**. It shows the video, the depth picture,
+   and a table of detections. The tab is view-only: it cannot move the robot.
+4. If the Pi's address changes, type the new one in the box and reconnect. If the link drops, the tab reconnects by itself.
+
+Until the stereo calibration is done the tab warns "UNCALIBRATED: depth values are NOT trustworthy", and until a strawberry
+YOLO model exists there are no detections to pick (with `detection.enabled: false` there are none at all).
+
 ## 5. Stereo calibration (needed for real millimeters)
 
 1. On the PC, print the board: `python make_checkerboard.py` writes

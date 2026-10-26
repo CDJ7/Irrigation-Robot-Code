@@ -168,6 +168,8 @@ class DeltaRobotApp:
         self.vision_thread.start()
         self.tracking_mode = False
 
+        self.live_camera = None   # the view-only "Live Camera (Pi)" tab; stays None if its libraries are missing
+
         self._build_ui()
         self._poll_serial()
         self._poll_camera()
@@ -202,12 +204,15 @@ class DeltaRobotApp:
 
         self.tab_main = ttk.Frame(self.notebook)
         self.tab_debug = ttk.Frame(self.notebook)
+        self.tab_camera = ttk.Frame(self.notebook)
 
         self.notebook.add(self.tab_main, text="Main Operations")
         self.notebook.add(self.tab_debug, text="Debug & Calibration")
+        self.notebook.add(self.tab_camera, text="Live Camera (Pi)")
 
         self._build_main_tab(pad)
         self._build_debug_tab(pad)
+        self._build_camera_tab()
 
         # --- Bottom: Global Actions & Log ---
         act = ttk.Frame(self.root)
@@ -317,6 +322,18 @@ class DeltaRobotApp:
             ttk.Button(setup, text=f"A{i+1} +", width=5, command=lambda ax=i: self._raw_jog_axis(ax, 1)).grid(row=3, column=3 + i * 2, **pad)
 
         ttk.Button(setup, text="Set Current Position as Home (Zero ESP32)", command=lambda: self._send("Z")).grid(row=4, column=0, columnspan=4, padx=pad["padx"], pady=20)
+
+    def _build_camera_tab(self):
+        """View-only camera tab (video, depth, detections). It never sends anything to the robot.
+        Needs: pip install pillow numpy opencv-python  -- without them the tab just explains what is missing."""
+        try:
+            from live_camera_tab import LiveCameraTab
+            self.live_camera = LiveCameraTab(self.tab_camera, self.root, log=self._log)
+        except ImportError as ex:
+            ttk.Label(self.tab_camera, foreground="#b35c00", justify="left", wraplength=800,
+                      text=f"The camera tab is disabled: {ex}\n\nInstall what is missing with:\n"
+                           "    pip install pillow numpy opencv-python\nand restart this program. "
+                           "(The rest of the program works without it.)").pack(padx=20, pady=20, anchor="w")
 
     def _refresh_ports(self):
         ports = [p.device for p in serial.tools.list_ports.comports()]
@@ -576,6 +593,8 @@ class DeltaRobotApp:
                 pass
             self.link.disconnect()
         self.vision_thread.stop_tracking()
+        if self.live_camera is not None:
+            self.live_camera.shutdown()
         self.root.destroy()
 
 if __name__ == "__main__":

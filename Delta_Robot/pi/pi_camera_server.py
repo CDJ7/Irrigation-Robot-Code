@@ -681,7 +681,8 @@ class PiCameraServer:
         s.listen(8)
         s.settimeout(0.5)
         self.tcp_sock, self.tcp_port = s, s.getsockname()[1]
-        threading.Thread(target=self._accept_loop, daemon=True, name="tcp-accept").start()
+        self._accept_thread = threading.Thread(target=self._accept_loop, daemon=True, name="tcp-accept")
+        self._accept_thread.start()
         if n["http_port"] is not None:   # null in config.yaml = browser viewer off
             self.http = ThreadingHTTPServer((n["tcp_host"], n["http_port"]), make_http_handler(self.hub))
             self.http.daemon_threads = True
@@ -709,6 +710,11 @@ class PiCameraServer:
         if self.http:
             self.http.shutdown()
             self.http.server_close()
+        # Wait for the accept thread to notice the stop flag BEFORE closing the socket: closing a socket while
+        # another thread is still inside accept() leaves the port bound for a moment (a restart would fail).
+        t = getattr(self, "_accept_thread", None)
+        if t is not None:
+            t.join(timeout=2.0)
         if self.tcp_sock:
             self.tcp_sock.close()
         self.pipeline.join(timeout=3.0)
