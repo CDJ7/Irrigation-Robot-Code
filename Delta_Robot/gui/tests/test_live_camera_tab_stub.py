@@ -139,4 +139,20 @@ with mock.patch.dict(sys.modules, {"live_camera_tab": None}):                   
     app2._build_camera_tab()
 assert app2.live_camera is None
 print("GUI hook OK (tab created; graceful message when libraries are missing)")
+
+# ---------------------------------------------------------------- calibration-capture mode in the tab
+jc = {"seq": 9, "mode": "calibration_capture", "calibrated": False, "server_fps": 10.0, "detections": [],
+      "calib": {"saved": 4, "target": 30, "found_left": True, "found_right": True, "hint": "Hold the board still...",
+                "coverage_hint": "still needed: top-left"}}
+txt, ok = ov.summarize_frame(jc)
+assert "saved 4/30" in txt and "Hold the board still" in txt and "top-left" in txt and ok
+import live_camera_tab as lct2   # noqa: E402  (re-imported above; fresh module object)
+root3 = FakeRoot()
+tab3 = lct2.LiveCameraTab(mock.MagicMock(), root3, log=logs.append, client_factory=FakeClient)
+tab3.frame_queue.put(("DET", jc)); tab3._poll()
+assert tab3.video_frame.config.call_args.kwargs["text"] == tab3.TITLE_CALIB_L
+assert tab3.depth_frame.config.call_args.kwargs["text"] == tab3.TITLE_CALIB_R
+tab3.frame_queue.put(("DET", j6)); tab3._poll()
+assert tab3.video_frame.config.call_args.kwargs["text"] == tab3.TITLE_VIDEO, "titles must go back to normal"
+print("calibration-mode titles OK")
 print("\nALL TESTS PASSED")

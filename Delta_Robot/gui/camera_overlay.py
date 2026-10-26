@@ -60,6 +60,12 @@ def status_colour(state: str) -> str:
 
 def summarize_frame(det: Dict) -> Tuple[str, bool]:
     """(text for the info line, is_trustworthy) from a J message. Not trustworthy = uncalibrated depth."""
+    if det.get("mode") == "calibration_capture":
+        c = det.get("calib", {})
+        txt = f"CALIBRATION CAPTURE: saved {c.get('saved', 0)}/{c.get('target', '?')} pairs | {c.get('hint', '')}"
+        if c.get("coverage_hint"):
+            txt += f" | {c['coverage_hint']}"
+        return txt, bool(c.get("found_left") and c.get("found_right"))
     calibrated = bool(det.get("calibrated"))
     fps = det.get("server_fps", 0)
     model = det.get("model") or "no detector"

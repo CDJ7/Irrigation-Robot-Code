@@ -20,6 +20,11 @@ PANEL_W, PANEL_H = 460, 345        # each picture is shrunk to fit this box
 
 
 class LiveCameraTab:
+    TITLE_VIDEO = "Left eye + detections (green = allowed class, red = not allowed)"
+    TITLE_DEPTH = "Depth (red = near, blue = far, black = no data)"
+    TITLE_CALIB_L = "CALIBRATION: left eye (detected corners drawn)"
+    TITLE_CALIB_R = "CALIBRATION: right eye (detected corners drawn)"
+
     def __init__(self, parent: tk.Misc, root: tk.Tk, log=print, client_factory=CameraClient):
         self.parent, self.root, self.log = parent, root, log
         self.frame_queue: "queue.Queue" = queue.Queue(maxsize=12)      # bounded: old frames are dropped
@@ -61,11 +66,11 @@ class LiveCameraTab:
 
         panels = ttk.Frame(self.parent)
         panels.pack(fill="both", expand=True, **pad)
-        vf = ttk.LabelFrame(panels, text="Left eye + detections (green = allowed class, red = not allowed)")
+        self.video_frame = vf = ttk.LabelFrame(panels, text=self.TITLE_VIDEO)
         vf.pack(side="left", fill="both", expand=True, **pad)
         self.video_lbl = ttk.Label(vf, text="No video yet", anchor="center")
         self.video_lbl.pack(fill="both", expand=True)
-        df = ttk.LabelFrame(panels, text="Depth (red = near, blue = far, black = no data)")
+        self.depth_frame = df = ttk.LabelFrame(panels, text=self.TITLE_DEPTH)
         df.pack(side="left", fill="both", expand=True, **pad)
         self.depth_lbl = ttk.Label(df, text="No depth yet", anchor="center")
         self.depth_lbl.pack(fill="both", expand=True)
@@ -160,6 +165,9 @@ class LiveCameraTab:
         self.depth_lbl.config(image=self._depth_photo, text="")
 
     def _update_info(self, det: dict) -> None:
+        calibrating = det.get("mode") == "calibration_capture"
+        self.video_frame.config(text=self.TITLE_CALIB_L if calibrating else self.TITLE_VIDEO)
+        self.depth_frame.config(text=self.TITLE_CALIB_R if calibrating else self.TITLE_DEPTH)
         text, ok = summarize_frame(det)
         n = len(self._frame_times)
         gui_fps = (n - 1) / (self._frame_times[-1] - self._frame_times[0]) if n > 1 else 0.0

@@ -79,11 +79,20 @@ YOLO model exists there are no detections to pick (with `detection.enabled: fals
    `checkerboard_9x6_25mm_letter.svg` (already included). Open it in a browser, print at
    **100 % / Actual size** (not "fit to page"). Glue it flat on a rigid board.
    **Measure one square** with a ruler; use that number as `--square-mm` below.
-2. Stop the server so the camera is free.
-3. `python calibrate_stereo.py capture --square-mm 25` and move the board slowly through the
-   picture — corners and edges, near and far, tilted ±30°. See the header of
-   `calibrate_stereo.py` for the full checklist. To see what the camera sees over SSH:
-   `scp deltarobot@deltapi.local:Delta_Robot/pi/calib_preview.jpg .`
+2. **Live capture (you watch it on your PC).** Stop any running server (Ctrl+C), then on the Pi:
+   ```
+   python pi_camera_server.py --calibrate-capture
+   ```
+   Open the GUI's **Live Camera (Pi)** tab and click Connect (or open `http://192.168.137.128:5000`). Both eyes appear with the
+   detected corners drawn on them; the line under the tab's address bar says how many pairs are saved and what to do next
+   ("Hold the board still...", "Move or tilt the board", "still needed: top-left"). Pairs are saved **automatically** when the
+   whole board is visible in both eyes, is held still, and has moved since the last pair. Collect all 30:
+   * fill the picture: corners and edges as well as the centre; some near, some far (about 25–60 cm)
+   * tilt the board ±30° in different directions, not only flat-on
+   * keep it flat on a rigid board, matte, no glare; hold still for about a second at each pose
+   When it says **DONE**, press Ctrl+C on the Pi. (`--calib-count 40` collects more; images go to `calibration/images/`.)
+   Options: `--board 9x6` (inner corners), `--calib-dir PATH`. The old blind method, `calibrate_stereo.py capture`, still exists.
+3. Delete bad pairs if you notice any (a blurry or mis-detected pair is dropped by the solver automatically, but fewer is better).
 4. `python calibrate_stereo.py solve --square-mm 25` — aim for stereo RMS < ~0.5 px.
    It prints the measured **baseline** (compare with a ruler) and the nearest measurable distance
    for your `num_disparities`; it saves `calibration/stereo_calib.npz`, which the server loads.

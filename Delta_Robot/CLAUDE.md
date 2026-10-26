@@ -71,6 +71,12 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
   (ultralytics not installed on the Pi yet). Server stop() now waits for its accept thread (fixes in-process restart).
 * The Pi's private repo cannot be cloned without a token; files go PC->Pi with scp (then the CRLF sed fix).
 
+## Stereo calibration workflow (code done, not yet run on the real camera)
+`python pi_camera_server.py --calibrate-capture` -> watch corners in the GUI Live Camera tab -> pairs auto-saved to pi/calibration/images ->
+`python calibrate_stereo.py solve --square-mm <measured>` -> calibration/stereo_calib.npz (server loads it; J says calibrated:true).
+Board: pi/checkerboard_9x6_25mm_letter.svg printed at 100%, square size measured with a ruler. Measured speed with the first
+real test: server 6.2 fps (YUYV 1280x480, SGBM 128 disparities on 640x480 eyes, uncalibrated, no YOLO) -- slow; investigate stereo ms.
+
 ## Calibration status
 Stereo: n/a for ToF. Intrinsics: from SDK (to verify). Home/offsets/HOME_XYZ: uncalibrated (HOME_XYZ placeholder (0,0,-200)).
 Camera-to-robot transform: not done. Microsteps, final f, rf/re/e: TBD.
