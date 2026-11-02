@@ -63,6 +63,7 @@ RUN:   source ~/Delta_Robot/venv/bin/activate
        python pi_camera_server.py                       # normal
        python pi_camera_server.py --capture-dataset     # also save training images
        python pi_camera_server.py --fake                # synthetic camera, for testing
+       python pi_camera_server.py --calibrate-capture   # live stereo-calibration capture (see calibrate_stereo.py)
 """
 
 import argparse
@@ -389,6 +390,7 @@ class VisionPipeline(threading.Thread):
         self.allowed = {c.lower() for c in cfg["detection"]["allowed_classes"]}
         self.rect: Optional[StereoRectifier] = None
         self.matcher = DisparityMatcher(cfg["stereo"])
+        self.calib = None            # a calib_capture.CalibrationCapturer when started with --calibrate-capture
 
     # ---- helpers -------------------------------------------------------
     def _open_camera(self) -> bool:
@@ -441,6 +443,38 @@ class VisionPipeline(threading.Thread):
                     (0, 255, 255) if calibrated else (0, 0, 255), 1)
         return np.hstack([img, depth_color])
 
+    def _publish_calibration_frame(self, left: np.ndarray, right: np.ndarray, capture_ts: float, q) -> None:
+        """Calibration capture mode: V = left eye and D = RIGHT eye, both with the detected corners drawn."""
+        vis_l, vis_r, info = self.calib.process(left, right, capture_ts)
+        self.seq += 1
+        b = Bundle(self.seq, capture_ts)
+        dt = max(1e-3, capture_ts - getattr(self, "_calib_prev_t", capture_ts - 0.1))
+        self._calib_prev_t = capture_ts
+        self.fps = 0.8 * self.fps + 0.2 * (1.0 / dt) if self.fps else 1.0 / dt
+        meta = {"seq": self.seq, "t": round(capture_ts, 3), "width": left.shape[1], "height": left.shape[0],
+                "mode": "calibration_capture", "calib": info, "calibrated": False, "units": "mm",
+                "model": None, "model_has_allowed_class": False, "allowed_classes": sorted(self.allowed),
+                "server_fps": round(self.fps, 1), "detections": []}
+        b.status = {"seq": self.seq, "mode": "calibration_capture", "calibrated": False, "calib": info,
+                    "server_fps": meta["server_fps"], "camera_ok": True,
+                    "tcp_clients": self.hub.tcp_clients, "http_clients": self.hub.http_clients}
+        if self.hub.tcp_clients > 0:
+            ok_v, jv = cv2.imencode(".jpg", vis_l, q)
+            ok_d, jd = cv2.imencode(".jpg", vis_r, q)
+            if ok_v and ok_d:
+                b.wire = (frame_msg(b"J", json.dumps(meta).encode("utf-8"))
+                          + frame_msg(b"V", jv.tobytes()) + frame_msg(b"D", jd.tobytes()))
+        if self.hub.http_clients > 0:
+            both = np.hstack([vis_l, vis_r])
+            cv2.putText(both, info["hint"][:90], (8, both.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+            ok, jm = cv2.imencode(".jpg", both, q)
+            if ok:
+                b.mjpeg = jm.tobytes()
+        self.hub.publish(b)
+        if info["new_this_run"] and info["saved"] != getattr(self, "_calib_logged", -1):
+            self._calib_logged = info["saved"]
+            log.info("Calibration: saved pair %d/%d  (%s)", info["saved"], info["target"], info["coverage_hint"] or "ok")
+
     # ---- main loop -----------------------------------------------------
     def run(self) -> None:
         net, cfgd = self.cfg["network"], self.cfg["depth"]
@@ -472,12 +506,19 @@ class VisionPipeline(threading.Thread):
             t_cap = time.monotonic()
             capture_ts = time.time()
 
-            wanted = self.hub.consumers() > 0 or self.dataset.get("enabled")
+            wanted = self.hub.consumers() > 0 or self.dataset.get("enabled") or self.calib is not None
             if not wanted:                    # nobody watching: just drain the camera slowly
                 self.stop_flag.wait(max(0.0, 1.0 / net["idle_fps"] - (time.monotonic() - t_start)))
                 continue
 
             left, right = split_eyes(frame)
+            if self.calib is not None:
+                # CALIBRATION CAPTURE MODE: raw eyes (no rectification), no stereo matching, no YOLO.
+                self._publish_calibration_frame(left, right, capture_ts, q)
+                spare = frame_period - (time.monotonic() - t_start)
+                if spare > 0:
+                    self.stop_flag.wait(spare)
+                continue
             if self.rect is None:             # created on first frame so we know the eye size
                 self.rect = StereoRectifier(self.cfg, (left.shape[1], left.shape[0]))
             left, right = self.rect.rectify(left, right)
@@ -681,7 +722,8 @@ class PiCameraServer:
         s.listen(8)
         s.settimeout(0.5)
         self.tcp_sock, self.tcp_port = s, s.getsockname()[1]
-        threading.Thread(target=self._accept_loop, daemon=True, name="tcp-accept").start()
+        self._accept_thread = threading.Thread(target=self._accept_loop, daemon=True, name="tcp-accept")
+        self._accept_thread.start()
         if n["http_port"] is not None:   # null in config.yaml = browser viewer off
             self.http = ThreadingHTTPServer((n["tcp_host"], n["http_port"]), make_http_handler(self.hub))
             self.http.daemon_threads = True
@@ -709,6 +751,11 @@ class PiCameraServer:
         if self.http:
             self.http.shutdown()
             self.http.server_close()
+        # Wait for the accept thread to notice the stop flag BEFORE closing the socket: closing a socket while
+        # another thread is still inside accept() leaves the port bound for a moment (a restart would fail).
+        t = getattr(self, "_accept_thread", None)
+        if t is not None:
+            t.join(timeout=2.0)
         if self.tcp_sock:
             self.tcp_sock.close()
         self.pipeline.join(timeout=3.0)
@@ -722,6 +769,11 @@ def main() -> None:
     ap.add_argument("--capture-dataset", nargs="?", const="", default=None, metavar="DIR",
                     help="save left-eye grayscale images for training (optional folder)")
     ap.add_argument("--interval", type=float, help="seconds between dataset images")
+    ap.add_argument("--calibrate-capture", action="store_true",
+                    help="LIVE stereo-calibration capture: watch the corners in the GUI tab / browser; pairs are saved automatically")
+    ap.add_argument("--board", default="9x6", help="checkerboard inner corners (with --calibrate-capture)")
+    ap.add_argument("--calib-count", type=int, default=30, help="pairs to collect (with --calibrate-capture)")
+    ap.add_argument("--calib-dir", default=os.path.join(HERE, "calibration", "images"))
     args = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -743,6 +795,12 @@ def main() -> None:
         detector = None if (args.no_yolo or not cfg["detection"]["enabled"]) else YoloDetector(cfg["detection"])
 
     server = PiCameraServer(cfg, camera, detector, dataset_cfg)
+    if args.calibrate_capture:
+        from calib_capture import CalibrationCapturer
+        from stereo_common import parse_pattern
+        server.pipeline.calib = CalibrationCapturer(args.calib_dir, parse_pattern(args.board), args.calib_count)
+        log.info("CALIBRATION CAPTURE mode: open the GUI's Live Camera tab or http://<pi>:5000 and move the board. "
+                 "Saving to %s", args.calib_dir)
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())   # systemd stop
     signal.signal(signal.SIGINT, lambda *_: stop.set())

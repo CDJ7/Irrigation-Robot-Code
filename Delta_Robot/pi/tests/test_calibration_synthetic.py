@@ -65,13 +65,21 @@ class ScriptedCamera:
         return self.frames.pop(0)
 
 
-def make_frames(n, rng):
+def make_frames(n, rng, spread=(60, 40), grid=False):
     frames = []
-    for _ in range(n):
-        yaw, pitch, roll = np.radians(rng.uniform(-30, 30, 3))
+    # grid=True: the first 9 poses put the board over a 3x3 grid of the picture (what a person does when told which
+    # areas are still empty); the rest are random.
+    grid_px = [(u, v) for v in (62, 120, 178) for u in (97, 160, 242)]   # left column kept far enough in for BOTH eyes to see the board
+    for k in range(n):
+        tilt = 8 if (grid and k < 9) else 30          # grid poses: nearly flat-on, so every one is detectable
+        yaw, pitch, roll = np.radians(rng.uniform(-tilt, tilt, 3))
         Rb = cv2.Rodrigues(np.array([pitch, yaw, roll]))[0]
         # board center position in left camera frame (mm)
-        center = np.array([rng.uniform(-60, 60), rng.uniform(-40, 40), rng.uniform(330, 520)])
+        center = np.array([rng.uniform(-spread[0], spread[0]), rng.uniform(-spread[1], spread[1]), rng.uniform(330, 520)])
+        if grid and k < len(grid_px):
+            u, v = grid_px[k]
+            z = 580.0
+            center = np.array([(u - K1[0, 2]) * z / K1[0, 0], (v - K1[1, 2]) * z / K1[1, 1], z])
         # board origin = first inner corner = center - Rb @ (half board size of the INNER grid)
         half = np.array([(PATTERN[0] - 1) * SQ / 2, (PATTERN[1] - 1) * SQ / 2, 0])
         tb = center - Rb @ half

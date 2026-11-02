@@ -53,17 +53,49 @@ Self-tests (no hardware): `python tests/test_server_fake.py`, `tests/test_calibr
 
 If the frame rate is low, try `fourcc: MJPG` (or `YUYV`) in `config.yaml` → `camera:`.
 
+## 4b. Stream the camera to the GUI on your PC
+
+1. **On the Pi** (ssh in):
+   ```
+   source ~/Delta_Robot/venv/bin/activate
+   cd ~/Delta_Robot/pi
+   python pi_camera_server.py
+   ```
+   It prints `Listening: TCP 8485, browser http://deltapi.local:5000` and then a status line every 10 seconds
+   (frames per second, milliseconds spent on depth). Leave it running; Ctrl+C stops it. Only one program can use the camera.
+2. **Quick check without the GUI:** open `http://192.168.137.128:5000` in a browser on your PC (left = camera,
+   right = depth).
+3. **In the GUI** (on your PC): `pip install -r gui/requirements.txt`, then `python gui/Delta_Robot_GUI.py`, open the
+   **Live Camera (Pi)** tab, check the address (`192.168.137.128`), click **Connect**. It shows the video, the depth picture,
+   and a table of detections. The tab is view-only: it cannot move the robot.
+4. If the Pi's address changes, type the new one in the box and reconnect. If the link drops, the tab reconnects by itself.
+
+Until the stereo calibration is done the tab warns "UNCALIBRATED: depth values are NOT trustworthy", and until a strawberry
+YOLO model exists there are no detections to pick (with `detection.enabled: false` there are none at all).
+
 ## 5. Stereo calibration (needed for real millimeters)
 
 1. On the PC, print the board: `python make_checkerboard.py` writes
    `checkerboard_9x6_25mm_letter.svg` (already included). Open it in a browser, print at
    **100 % / Actual size** (not "fit to page"). Glue it flat on a rigid board.
    **Measure one square** with a ruler; use that number as `--square-mm` below.
-2. Stop the server so the camera is free.
-3. `python calibrate_stereo.py capture --square-mm 25` and move the board slowly through the
-   picture — corners and edges, near and far, tilted ±30°. See the header of
-   `calibrate_stereo.py` for the full checklist. To see what the camera sees over SSH:
-   `scp deltarobot@deltapi.local:Delta_Robot/pi/calib_preview.jpg .`
+2. **Live capture (you watch it on your PC).** Stop any running server (Ctrl+C), then on the Pi:
+   ```
+   python pi_camera_server.py --calibrate-capture
+   ```
+   Open the GUI's **Live Camera (Pi)** tab and click Connect (or open `http://192.168.137.128:5000`). Both eyes appear with the
+   detected corners drawn on them; the line under the tab's address bar says how many pairs are saved and what to do next
+   ("Hold the board still...", "Move or tilt the board", "still needed: top-left"). Pairs are saved **automatically** when the
+   whole board is visible in both eyes, is held still, and has moved since the last pair. Collect all 30:
+   * fill the picture: corners and edges as well as the centre; some near, some far (about 25–60 cm)
+   * tilt the board ±30° in different directions, not only flat-on
+   * keep it flat on a rigid board, matte, no glare; hold still for about a second at each pose
+   **Coverage is enforced:** once 6 pairs exist, an area of the picture that already holds 3 pairs takes no more while other areas
+   are empty ("This area already has enough pairs - move the board to: top-left, ..."), and DONE appears only after the board has been
+   seen in all nine parts of the picture (3 x 3 grid) AND the target count is reached. Pairs must be at least 25 pixels apart.
+   When it says **DONE**, press Ctrl+C on the Pi. (`--calib-count 40` collects more; images go to `calibration/images/`.)
+   Options: `--board 9x6` (inner corners), `--calib-dir PATH`. The old blind method, `calibrate_stereo.py capture`, still exists.
+3. Delete bad pairs if you notice any (a blurry or mis-detected pair is dropped by the solver automatically, but fewer is better).
 4. `python calibrate_stereo.py solve --square-mm 25` — aim for stereo RMS < ~0.5 px.
    It prints the measured **baseline** (compare with a ruler) and the nearest measurable distance
    for your `num_disparities`; it saves `calibration/stereo_calib.npz`, which the server loads.

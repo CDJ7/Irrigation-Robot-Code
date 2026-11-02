@@ -64,6 +64,19 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | 7 Firmware | not started |
 | 8 Docs + final push | partly (README, docs); final push needs user's choice main vs branch/PR |
 
+## Camera streaming to the GUI (done in code, not yet run on the real Pi/screen)
+* Clean stereo pictures were confirmed by the user's screenshots (lit, textured scene): the broken-JPEG problem happened with the lens caps on.
+* gui/camera_client.py rewritten (reconnect, honest status, J support, bounded queue; no GUI toolkit). gui/live_camera_tab.py + camera_overlay.py:
+  view-only Tkinter tab added to gui/Delta_Robot_GUI.py (only additions). Pi config now YUYV 1280x480 @15 fps, detection.enabled=false
+  (ultralytics not installed on the Pi yet). Server stop() now waits for its accept thread (fixes in-process restart).
+* The Pi's private repo cannot be cloned without a token; files go PC->Pi with scp (then the CRLF sed fix).
+
+## Stereo calibration workflow (code done, not yet run on the real camera)
+`python pi_camera_server.py --calibrate-capture` -> watch corners in the GUI Live Camera tab -> pairs auto-saved to pi/calibration/images ->
+`python calibrate_stereo.py solve --square-mm <measured>` -> calibration/stereo_calib.npz (server loads it; J says calibrated:true).
+Board: pi/checkerboard_9x6_25mm_letter.svg printed at 100%, square size measured with a ruler. Measured speed with the first
+real test: server 6.2 fps (YUYV 1280x480, SGBM 128 disparities on 640x480 eyes, uncalibrated, no YOLO) -- slow; investigate stereo ms.
+
 ## Calibration status
 Stereo: n/a for ToF. Intrinsics: from SDK (to verify). Home/offsets/HOME_XYZ: uncalibrated (HOME_XYZ placeholder (0,0,-200)).
 Camera-to-robot transform: not done. Microsteps, final f, rf/re/e: TBD.

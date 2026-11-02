@@ -23,15 +23,29 @@ and the ToF steps below (sections 2–4) can be skipped.
    git pull
    scp -r Delta_Robot deltarobot@192.168.137.128:~/
    ```
-2. **On the Pi** (ssh in), create the environment and check the camera:
+2. **On the Pi** (ssh in). First fix Windows line endings (files that went through Windows Git/`scp` can have `CRLF`,
+   which makes shell scripts fail with `set: Illegal option -`; the repo now has a `.gitattributes` to prevent it, but files
+   copied earlier still need this once):
+   ```
+   find ~/Delta_Robot -type f \( -name "*.sh" -o -name "*.service" -o -name "*.yaml" -o -name "*.py" -o -name "*.ino" \) -exec sed -i 's/\r$//' {} +
+   ```
+   Then create the environment and check the camera:
    ```
    sh ~/Delta_Robot/pi/tof/setup_venv.sh        # venv + numpy/OpenCV (the ToF SDK it also installs is simply unused)
    source ~/Delta_Robot/venv/bin/activate
    cd ~/Delta_Robot/pi
-   python camera_check.py
-   python camera_check.py --save 1280x480
+   python camera_check.py --only 1280x480       # quick: three frame rates for one size
+   python camera_check.py                       # full table (about 1-2 minutes)
    ```
-   Paste the table. To look at the pictures, run on your PC: `scp deltarobot@192.168.137.128:Delta_Robot/pi/camera_check_out/*.png .`
+   Paste the table. The important columns: **corrupt** (should be 0) and **real fps**. If `corrupt` is not 0 at a given rate, that
+   combination delivers broken pictures. Rows with `BROKEN FRAMES` are not usable. Also run these read-only checks and paste them:
+   ```
+   lsusb -t                       # shows the camera's USB speed: 480M = USB 2.0, 5000M = USB 3.0
+   vcgencmd get_throttled         # 0x0 = fine; anything else can mean under-voltage (weak power supply)
+   dmesg | grep -iE "usb|uvc|under-voltage" | tail -20
+   ```
+   Things worth trying if frames are broken at every rate: a different USB port (the blue USB 3.0 ones), a shorter or better USB
+   cable, and the official Pi 5 power supply (27 W). The camera draws up to 500 mA. To look at the pictures, run on your PC: `scp deltarobot@192.168.137.128:Delta_Robot/pi/camera_check_out/*.png .`
 3. **Test the depth pipeline without YOLO** (no big download yet):
    ```
    python pi_camera_server.py --no-yolo
