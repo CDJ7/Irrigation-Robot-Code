@@ -77,6 +77,14 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 Board: pi/checkerboard_9x6_25mm_letter.svg printed at 100%, square size measured with a ruler. Measured speed with the first
 real test: server 6.2 fps (YUYV 1280x480, SGBM 128 disparities on 640x480 eyes, uncalibrated, no YOLO) -- slow; investigate stereo ms.
 
+## First real stereo calibration (user's Pi, 640x480 per eye, 9x6 board, 25 mm nominal square)
+22 of 30 pairs used; stereo RMS 0.391 px, row error 0.160 px, focal 726.3 px, baseline 62.24 mm (to verify with a ruler),
+principal point (386.3, 227.2) after rectification (alpha=0). Nearest measurable distance with num_disparities=128 is 353 mm ->
+raise num_disparities (192/256) if strawberries are closer than ~35 cm; waiting for the user's working distance. The top third
+of the picture was never covered in this run (capture now enforces coverage). Files on the Pi: ~/Delta_Robot/pi/calibration/
+(stereo_calib.npz, stereo_calib_report.txt, rectify_check.jpg). Ruler check at 40/60 cm still to be done; Live Camera tab now
+shows 'centre distance' for it.
+
 ## Calibration status
 Stereo: n/a for ToF. Intrinsics: from SDK (to verify). Home/offsets/HOME_XYZ: uncalibrated (HOME_XYZ placeholder (0,0,-200)).
 Camera-to-robot transform: not done. Microsteps, final f, rf/re/e: TBD.

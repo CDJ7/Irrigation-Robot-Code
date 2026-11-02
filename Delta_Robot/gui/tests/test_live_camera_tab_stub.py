@@ -32,7 +32,10 @@ assert ov.fit_inside(img, 460, 345).shape == img.shape                          
 txt, ok = ov.summarize_frame({"seq": 7, "server_fps": 12.3, "calibrated": False, "model": "yolov8n.pt",
                               "model_has_allowed_class": False})
 assert not ok and "UNCALIBRATED" in txt and "no allowed" in txt
-txt, ok = ov.summarize_frame({"seq": 8, "calibrated": True, "model": "s.pt", "model_has_allowed_class": True})
+txt, ok = ov.summarize_frame({"seq": 8, "calibrated": True, "model": "s.pt", "model_has_allowed_class": True,
+                              "center_probe": {"xyz_mm": [1.0, 2.0, 402.6]}})
+assert "centre distance: 403 mm" in txt, txt
+assert "centre distance: n/a" in ov.summarize_frame({"seq": 1, "calibrated": True})[0]
 assert ok and "UNCALIBRATED" not in txt
 print("overlay OK")
 

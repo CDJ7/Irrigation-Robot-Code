@@ -70,6 +70,8 @@ def summarize_frame(det: Dict) -> Tuple[str, bool]:
     fps = det.get("server_fps", 0)
     model = det.get("model") or "no detector"
     txt = f"frame {det.get('seq', '?')} | Pi {fps:.1f} fps | model: {model}"
+    probe = (det.get("center_probe") or {}).get("xyz_mm")          # depth at the middle of the picture (for ruler checks)
+    txt += f" | centre distance: {probe[2]:.0f} mm" if probe else " | centre distance: n/a"
     if not calibrated:
         txt += " | UNCALIBRATED: depth values are NOT trustworthy"
     if det.get("model") and not det.get("model_has_allowed_class"):
