@@ -57,12 +57,12 @@ def main():
     rng = np.random.default_rng(7)
     tmp = tempfile.mkdtemp()
     out_dir = os.path.join(tmp, "images")
-    frames = syn.make_frames(24, rng)
+    frames = syn.make_frames(40, rng, spread=(60, 40), grid=True)   # 9 poses over a 3x3 grid, then random ones
     cfg = srv.load_config(os.path.join(PI, "config.yaml"))
     cfg["network"].update(tcp_port=0, http_port=None, target_fps=40, send_timeout_s=2.0)
     cfg["dataset"]["enabled"] = False
     server = srv.PiCameraServer(cfg, HoldingCamera(frames), None, cfg["dataset"])
-    server.pipeline.calib = CalibrationCapturer(out_dir, (9, 6), target=20, interval=0.0, min_move_px=3.0)
+    server.pipeline.calib = CalibrationCapturer(out_dir, (9, 6), target=20, interval=0.0, min_move_px=3.0, extra_allowed=15)
     server.start()
     try:
         s = socket.create_connection(("127.0.0.1", server.tcp_port), timeout=5)

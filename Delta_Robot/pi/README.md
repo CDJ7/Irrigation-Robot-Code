@@ -90,6 +90,9 @@ YOLO model exists there are no detections to pick (with `detection.enabled: fals
    * fill the picture: corners and edges as well as the centre; some near, some far (about 25–60 cm)
    * tilt the board ±30° in different directions, not only flat-on
    * keep it flat on a rigid board, matte, no glare; hold still for about a second at each pose
+   **Coverage is enforced:** once 6 pairs exist, an area of the picture that already holds 3 pairs takes no more while other areas
+   are empty ("This area already has enough pairs - move the board to: top-left, ..."), and DONE appears only after the board has been
+   seen in all nine parts of the picture (3 x 3 grid) AND the target count is reached. Pairs must be at least 25 pixels apart.
    When it says **DONE**, press Ctrl+C on the Pi. (`--calib-count 40` collects more; images go to `calibration/images/`.)
    Options: `--board 9x6` (inner corners), `--calib-dir PATH`. The old blind method, `calibrate_stereo.py capture`, still exists.
 3. Delete bad pairs if you notice any (a blurry or mis-detected pair is dropped by the solver automatically, but fewer is better).
