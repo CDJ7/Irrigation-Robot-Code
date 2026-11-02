@@ -240,12 +240,22 @@ def solve(args) -> int:
         f"  BASELINE                            : {baseline:.2f} mm   <- compare with a ruler!",
         f"  rotation between eyes               : {np.degrees(np.linalg.norm(cv2.Rodrigues(cal['R'])[0])):.2f} deg",
         "",
-        f"With num_disparities={nd}, min_disparity={md} (config.yaml):",
-        f"  nearest measurable distance : {f * baseline / (nd + md):.0f} mm",
-        "  depth resolution (change in Z for 1/16 px of disparity, the matcher's step):",
+        f"With min_disparity={md}, num_disparities={nd} (config.yaml) the matcher sees Z from "
+        f"{f * baseline / (md + nd - 1):.0f} mm to {f * baseline / max(md, 1):.0f} mm.",
+        "  Realistic depth precision (one pixel of disparity, and a typical error of 0.3 px; this is NOT the matcher's",
+        "  fine 1/16 px step, which is far smaller than the calibration error):",
     ]
-    for z in (200, 300, 400, 600, 800, 1000):
-        lines.append(f"    at Z={z:4d} mm : {z * z / (f * baseline) / 16.0:.2f} mm")
+    for z in (300, 400, 600, 800, 1000):
+        per_px = z * z / (f * baseline)
+        lines.append(f"    at Z={z:4d} mm : 1 px = {per_px:5.1f} mm, typical error about {0.3 * per_px:4.1f} mm")
+    if getattr(args, "work_range", None):
+        near, far = args.work_range
+        d_hi, d_lo = f * baseline / near, f * baseline / far          # disparity grows as things get closer
+        rec_min = max(0, int(np.floor(d_lo * 0.85 / 16.0)) * 16)
+        rec_num = int(np.ceil((d_hi * 1.10 - rec_min) / 16.0)) * 16
+        lines += ["", f"For a working range of {near:.0f}-{far:.0f} mm the disparity is {d_lo:.0f}-{d_hi:.0f} px, so use in config.yaml:",
+                  f"    stereo: min_disparity: {rec_min}   num_disparities: {rec_num}   (sees Z = "
+                  f"{f * baseline / (rec_min + rec_num - 1):.0f}..{f * baseline / max(rec_min, 1):.0f} mm; cost vs 128: {rec_num / 128:.2f}x)"]
     if cal["rms"] > 1.0:
         lines.append("\nWARNING: RMS is high. Re-capture with sharper images / flatter board / more "
                      "varied poses, and double-check --square-mm.")
@@ -289,6 +299,8 @@ def main() -> int:
     c.add_argument("--min-move", type=float, default=12.0, help="min mean corner motion (px) between saves")
     s = sub.choices["solve"]
     s.add_argument("--out", default=os.path.join(HERE, "calibration", "stereo_calib.npz"))
+    s.add_argument("--work-range", type=float, nargs=2, metavar=("NEAR_MM", "FAR_MM"),
+                   help="working distance range in mm (e.g. 550 1000): prints the best min_disparity / num_disparities")
     s.add_argument("--alpha", type=float, default=0.0,
                    help="0 = crop to valid pixels only, 1 = keep everything (black borders)")
     a = ap.parse_args()

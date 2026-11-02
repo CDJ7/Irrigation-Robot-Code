@@ -30,7 +30,7 @@ def make_cfg(tmp):
     cfg = srv.load_config(os.path.join(os.path.dirname(HERE), "config.yaml"))
     cfg["network"].update(tcp_port=0, http_port=0, target_fps=30, send_timeout_s=1.0)
     cfg["stereo"].update(calibration_file="/nonexistent", nominal_focal_px=280.0,
-                         nominal_baseline_mm=60.0, num_disparities=64)
+                         nominal_baseline_mm=60.0, num_disparities=64, min_disparity=0)
     cfg["dataset"].update(enabled=True, dir=tmp, interval_s=0.2)
     return cfg
 

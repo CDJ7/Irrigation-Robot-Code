@@ -85,6 +85,15 @@ of the picture was never covered in this run (capture now enforces coverage). Fi
 (stereo_calib.npz, stereo_calib_report.txt, rectify_check.jpg). Ruler check at 40/60 cm still to be done; Live Camera tab now
 shows 'centre distance' for it.
 
+## Working geometry (user, 2026-11-02)
+Camera mounted at an ANGLE (not straight down); closest point 70 cm, farthest 93 cm, "as the crow flies" (line of sight, i.e. radial
+distance; the Z we compute is along the optical axis, ~13% smaller at the picture corners). With margin ~55-100 cm -> disparity ~45-82 px
+(focal 726, baseline 62.2) -> config now min_disparity 32, num_disparities 64 (half the cost of 128), depth min_z 400 / max_z 1200 mm.
+Precision there: 1 px of disparity = 11 mm at 70 cm, 19 mm at 93 cm; typical error ~3-6 mm (to confirm with the ruler test).
+Small objects: a 30 mm strawberry is ~31 px wide at 70 cm in the 640x480 eye -> YOLO imgsz 320 would halve that; plan imgsz 640 (or
+train on crops) and consider the 1600x600 / 2560x800 camera modes later if precision is insufficient. Camera-to-robot transform is
+calibrated by jogging the effector (Kabsch), so the camera tilt does not need to be measured.
+
 ## Calibration status
 Stereo: n/a for ToF. Intrinsics: from SDK (to verify). Home/offsets/HOME_XYZ: uncalibrated (HOME_XYZ placeholder (0,0,-200)).
 Camera-to-robot transform: not done. Microsteps, final f, rf/re/e: TBD.

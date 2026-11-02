@@ -99,6 +99,8 @@ YOLO model exists there are no detections to pick (with `detection.enabled: fals
 4. `python calibrate_stereo.py solve --square-mm 25` — aim for stereo RMS < ~0.5 px.
    It prints the measured **baseline** (compare with a ruler) and the nearest measurable distance
    for your `num_disparities`; it saves `calibration/stereo_calib.npz`, which the server loads.
+   Add `--work-range NEAR FAR` (millimetres, e.g. `--work-range 550 1000`) and the report recommends the `min_disparity` and
+   `num_disparities` for your working distance. A smaller search range is faster; the server prints the range it uses at start-up.
 5. **Check against a ruler**: put a flat textured object at a measured distance (e.g. 400 mm
    from the camera) and open `http://deltapi.local:5000/status` and read `center_probe` (depth at the image center),
    or look at the `Z` label on a detection. If it is off by more than ~2 %, redo the calibration.

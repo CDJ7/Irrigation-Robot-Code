@@ -108,7 +108,7 @@ def main():
 
     # ---- solve step ----
     out = os.path.join(tmp, "calibration", "stereo_calib.npz")
-    ns = argparse.Namespace(board="9x6", square_mm=SQ, dir=img_dir, config=cfgpath, out=out, alpha=0.0)
+    ns = argparse.Namespace(board="9x6", square_mm=SQ, dir=img_dir, config=cfgpath, out=out, alpha=0.0, work_range=(400, 700))
     assert cs.solve(ns) == 0
     d = np.load(out)
     baseline = float(-d["P2"][0, 3] / d["P2"][0, 0])
