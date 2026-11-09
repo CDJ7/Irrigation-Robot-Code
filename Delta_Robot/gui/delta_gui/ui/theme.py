@@ -45,7 +45,7 @@ QPushButton#primary:disabled {{ background: #26406b; color: #7f8da6; border-colo
 QPushButton#warning {{ background: #3b2e0e; border-color: {p['warn']}; color: {p['warn']}; }}
 
 /* ---- the E-STOP: big, red, impossible to miss ---- */
-QPushButton#estop {{ background: {p['danger']}; border: 3px solid #fecaca; border-radius: 12px; color: white;
+QPushButton#estop {{ min-height: 80px; background: {p['danger']}; border: 3px solid #fecaca; border-radius: 12px; color: white;
                      font-size: 17px; font-weight: 800; padding: 14px 8px; }}
 QPushButton#estop:hover {{ background: #f87171; }}
 QPushButton#estop:pressed {{ background: {p['danger_dark']}; }}

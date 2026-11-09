@@ -219,7 +219,7 @@ def main():
                 if x.height() < need:
                     squashed.append((type(x).__name__, x.height(), (getattr(x, "text", lambda: "")() or "")[:20]))
             assert not squashed, f"page {key} at {w}x{h}: squashed widgets {squashed[:4]}"
-    win.resize(1320, 860)
+    win.resize(1320, 860); win._show_page("calibration")          # (the loop above ends on another page)
     print("7c. no input or button is squashed on any page at 1100x720, 1310x713 and 1920x1040 (pages scroll instead) OK")
 
     # ----------------------------------------------------------------- 8. wheel safety + test-mode visibility + settings file
