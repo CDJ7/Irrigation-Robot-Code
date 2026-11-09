@@ -43,7 +43,7 @@ motor-step / microstep / gearbox fields) replaces it. At that resolution a 30° 
 
 ## Not wired yet
 
-* **Vacuum gripper** — only an idea; no pin or driver chosen.
+* **Vacuum gripper** — GPIO 17 (active HIGH) in firmware v2, to a 3.3 V-compatible relay/MOSFET module; 10 kOhm pull-down to GND on the pin; pump on its own supply. See `FIRMWARE.md`. (Not wired yet; firmware not flashed.)
 * **Hardware emergency stop** — planned: a switch that cuts the driver power supply. Until it exists, keep a hand on the
   power switch whenever the motors are enabled.
 

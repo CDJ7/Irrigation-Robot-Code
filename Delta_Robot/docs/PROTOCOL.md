@@ -21,9 +21,10 @@ when it boots. The ESP32 does **no kinematics**: it only turns step counts into 
 | `STOP` | Abort the move in progress. | `ERR STOPPED` (if it was moving) then `POS s1 s2 s3` |
 | `P?` | Report position. | `POS s1 s2 s3` |
 
-**Planned (Phase 7, not in the current firmware):** `V 1` / `V 0` switch the vacuum (reply `OK`); `STOP` also switches it off. The GUI
-only sends them when `harvest.vacuum_enabled` is on; the simulated ESP32 already behaves this way. Today's firmware answers an unknown
-command with an error.
+**Firmware version 2 (written, NOT flashed yet; see `FIRMWARE.md`):** `V 1` / `V 0` switch the vacuum on GPIO 17 (reply `OK`), `V?` replies
+`VAC 0|1`, `STOP` also switches it off, `WARN VACUUM_TIMEOUT` is sent if it was on 30 s. Other changes: `H` with the drivers off -> `ERR NOT_ENABLED`;
+`EN`/`Z` while moving -> `ERR BUSY`; commands sent during homing are queued. The GUI only sends `V` when `harvest.vacuum_enabled` is on. Version-1
+firmware answers `V` with `ERR UNKNOWN_CMD`.
 
 Things to know (see `PHASE1_REVIEW.md`):
 

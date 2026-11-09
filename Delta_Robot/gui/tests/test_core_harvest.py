@@ -249,6 +249,12 @@ def main():
     rig.link.inject_link_loss(); assert rig.until(lambda: rig.h.state == H.ERROR, 10)
     print("10. ESP32 brown-out reset and cable loss mid-run: run ends in ERROR, position marked unknown OK")
 
+    # ---------------------------------------------------------------- 11. firmware safety timeout notice
+    rig = Rig().ready(); rig.robot.vacuum(True); rig.until(lambda: rig.robot.vacuum_on, 3)
+    rig.robot.on_line("WARN VACUUM_TIMEOUT")
+    assert not rig.robot.vacuum_on and rig.said("switched the vacuum off by itself")
+    print("11. firmware's 'WARN VACUUM_TIMEOUT' updates the GUI's vacuum state OK")
+
     print("\nALL TESTS PASSED")
 
 

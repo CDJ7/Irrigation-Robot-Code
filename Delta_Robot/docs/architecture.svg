@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="960" height="520" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#344054"/></marker>
+    <style>
+      .box{fill:#ffffff;stroke:#344054;stroke-width:2;rx:10}
+      .pi{fill:#e8f1ff} .pc{fill:#eaf7ee} .esp{fill:#fff4e0} .hw{fill:#f3f4f6}
+      .t{font-size:17px;font-weight:700;fill:#101828} .s{font-size:13px;fill:#344054} .l{font-size:12.5px;fill:#475467}
+      .w{stroke:#344054;stroke-width:2.2;fill:none} .stop{fill:#fee4e2;stroke:#b42318;stroke-width:2;rx:10}
+    </style>
+  </defs>
+  <rect width="960" height="520" fill="#ffffff"/>
+  <text x="480" y="30" text-anchor="middle" font-size="20" font-weight="700" fill="#101828">Delta Robot: who does what</text>
+  <text x="480" y="52" text-anchor="middle" class="s">The Pi only looks, the PC only decides, the ESP32 only moves.</text>
+
+  <rect class="box hw" x="30" y="90" width="190" height="110"/>
+  <text x="125" y="120" text-anchor="middle" class="t">USB stereo camera</text>
+  <text x="125" y="143" text-anchor="middle" class="s">2 global-shutter eyes</text>
+  <text x="125" y="161" text-anchor="middle" class="s">1280x480, grayscale</text>
+  <text x="125" y="179" text-anchor="middle" class="s">70-93 cm from the plants</text>
+
+  <rect class="box pi" x="290" y="90" width="240" height="110"/>
+  <text x="410" y="118" text-anchor="middle" class="t">Raspberry Pi 5  (pi/)</text>
+  <text x="410" y="141" text-anchor="middle" class="s">stereo depth (SGBM) + YOLO</text>
+  <text x="410" y="159" text-anchor="middle" class="s">measures the 3D point you click</text>
+  <text x="410" y="181" text-anchor="middle" class="l">never moves a motor</text>
+
+  <rect class="box pc" x="600" y="90" width="330" height="190"/>
+  <text x="765" y="118" text-anchor="middle" class="t">Windows PC  (gui/)</text>
+  <text x="765" y="141" text-anchor="middle" class="s">PyQt6 program: Operations, Camera,</text>
+  <text x="765" y="159" text-anchor="middle" class="s">Calibration, Harvest, Debug, Settings</text>
+  <text x="765" y="183" text-anchor="middle" class="s">camera XYZ -> robot XYZ (calibrated)</text>
+  <text x="765" y="201" text-anchor="middle" class="s">inverse kinematics + all safety checks</text>
+  <text x="765" y="219" text-anchor="middle" class="s">harvest state machine</text>
+  <text x="765" y="241" text-anchor="middle" class="l">the ONLY program that talks to the ESP32</text>
+  <text x="765" y="262" text-anchor="middle" class="l">simulated ESP32 / camera modes for testing</text>
+
+  <rect class="box esp" x="600" y="340" width="330" height="100"/>
+  <text x="765" y="368" text-anchor="middle" class="t">ESP32  (firmware/)</text>
+  <text x="765" y="391" text-anchor="middle" class="s">step pulses (synchronised, with acceleration)</text>
+  <text x="765" y="409" text-anchor="middle" class="s">homing, enable, STOP, vacuum on GPIO 17</text>
+  <text x="765" y="429" text-anchor="middle" class="l">does no kinematics</text>
+
+  <rect class="box hw" x="290" y="340" width="240" height="100"/>
+  <text x="410" y="368" text-anchor="middle" class="t">3 x DM542T drivers</text>
+  <text x="410" y="391" text-anchor="middle" class="s">3 x NEMA 23 + 47:1 gearbox</text>
+  <text x="410" y="409" text-anchor="middle" class="s">3 limit switches (home)</text>
+  <text x="410" y="429" text-anchor="middle" class="l">3200 pulses/rev, 417.8 steps/deg</text>
+
+  <rect class="box hw" x="30" y="340" width="190" height="100"/>
+  <text x="125" y="368" text-anchor="middle" class="t">Vacuum gripper</text>
+  <text x="125" y="391" text-anchor="middle" class="s">relay/MOSFET module</text>
+  <text x="125" y="409" text-anchor="middle" class="s">10k pull-down on GPIO 17</text>
+  <text x="125" y="429" text-anchor="middle" class="l">not wired yet</text>
+
+  <path class="w" d="M220,145 H290" marker-end="url(#ar)"/><text x="255" y="137" text-anchor="middle" class="l">USB</text>
+  <path class="w" d="M530,130 H600" marker-end="url(#ar)"/><text x="565" y="122" text-anchor="middle" class="l">TCP 8485</text>
+  <text x="565" y="148" text-anchor="middle" class="l">J, V, D</text>
+  <path class="w" d="M600,190 H530" marker-end="url(#ar)" stroke-dasharray="5 4"/><text x="565" y="206" text-anchor="middle" class="l">PROBE u v</text>
+  <path class="w" d="M765,280 V340" marker-end="url(#ar)"/><text x="860" y="312" text-anchor="middle" class="l">USB serial, 115200</text>
+  <text x="860" y="328" text-anchor="middle" class="l">(Wi-Fi later)</text>
+  <path class="w" d="M600,390 H530" marker-end="url(#ar)"/><text x="565" y="382" text-anchor="middle" class="l">STEP/DIR/ENA</text>
+  <path class="w" d="M600,425 C560,490 200,490 125,440" marker-end="url(#ar)" stroke-dasharray="5 4"/>
+  <text x="365" y="489" text-anchor="middle" class="l">GPIO 17: V 1 / V 0</text>
+
+  <rect class="stop" x="30" y="228" width="490" height="76"/>
+  <text x="275" y="255" text-anchor="middle" class="t" fill="#b42318" style="fill:#b42318">E-STOP</text>
+  <text x="275" y="276" text-anchor="middle" class="l">Button on every page (and Esc): sends STOP, vacuum off, drivers off.</text>
+  <text x="275" y="294" text-anchor="middle" class="l">Software only: keep a hand on the power switch. Hardware E-stop planned.</text>
+</svg>
