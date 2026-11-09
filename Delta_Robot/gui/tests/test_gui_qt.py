@@ -72,7 +72,7 @@ def main():
         win._show_page(key); QTest.qWait(30)
         b = win.estop_btn
         assert b.isVisibleTo(win) and b.height() >= 80 and win.rect().contains(b.mapTo(win, b.rect().center())), key
-        assert win.stack.currentWidget() is win.pages[key]
+        assert win.stack.currentWidget().widget() is win.pages[key]
     print("1. five pages; the E-STOP is visible, large and on-screen on every page OK")
 
     # ----------------------------------------------------------------- 2. connect, enable, home, move (simulated ESP32)
@@ -203,6 +203,24 @@ def main():
                      if img.pixelColor(x, y).lightness() > bg + 60)
         assert bright > 15, f"{box.__class__.__name__} shows no text (bright pixels: {bright})"
     print("7b. number boxes visibly draw their values (pixel check) OK")
+
+    # ----------------------------------------------------------------- 7c. no page may squash its inputs at ANY window size
+    # (the first real run on the user's PC showed Settings boxes crushed to 4 px in a shorter window; the pages now scroll instead)
+    from PyQt6.QtWidgets import QAbstractSpinBox, QComboBox, QLineEdit, QPushButton
+    for (w, h) in ((1100, 720), (1310, 713), (1920, 1040)):
+        win.resize(w, h)
+        for key, _ in PAGES:
+            win._show_page(key); QTest.qWait(120)
+            squashed = []
+            for x in win.pages[key].findChildren((QAbstractSpinBox, QLineEdit, QComboBox, QPushButton)):
+                if not x.isVisibleTo(win.pages[key]) or isinstance(x.parent(), QAbstractSpinBox):
+                    continue                                   # (Qt's inner text field of a spin box is not a real input)
+                need = 24 if not isinstance(x, QPushButton) else 22
+                if x.height() < need:
+                    squashed.append((type(x).__name__, x.height(), (getattr(x, "text", lambda: "")() or "")[:20]))
+            assert not squashed, f"page {key} at {w}x{h}: squashed widgets {squashed[:4]}"
+    win.resize(1320, 860)
+    print("7c. no input or button is squashed on any page at 1100x720, 1310x713 and 1920x1040 (pages scroll instead) OK")
 
     # ----------------------------------------------------------------- 8. wheel safety + test-mode visibility + settings file
     from PyQt6.QtGui import QWheelEvent

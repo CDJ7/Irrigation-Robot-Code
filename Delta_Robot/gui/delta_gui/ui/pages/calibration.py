@@ -12,8 +12,8 @@ Nothing takes effect until "Apply and save" (which is refused while the robot is
 import copy
 import itertools
 
-from PyQt6.QtWidgets import (QCheckBox, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (QCheckBox, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout,
+                             QWidget)
 
 from ...core.kinematics import DeltaKinematics, Workspace, joint_limit_violation, radius_to_side
 from ...core.settings import validate
@@ -25,12 +25,7 @@ class CalibrationPage(QWidget):
         super().__init__()
         self.setObjectName("page")
         self.ctx = ctx
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        area = QScrollArea(); area.setWidgetResizable(True); area.setFrameShape(QScrollArea.Shape.NoFrame)
-        outer.addWidget(area)
-        body = QWidget(); body.setObjectName("page"); area.setWidget(body)
-        root = QVBoxLayout(body); root.setContentsMargins(18, 14, 18, 14); root.setSpacing(14)
+        root = QVBoxLayout(self); root.setContentsMargins(18, 14, 18, 14); root.setSpacing(14)
 
         # ---------------------------------------------------------------- geometry
         g = card("Robot geometry   (measure these; values marked ? are unverified)")

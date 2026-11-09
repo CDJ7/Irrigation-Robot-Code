@@ -17,7 +17,7 @@ from .pages.debug import DebugPage
 from .pages.operations import OperationsPage
 from .pages.settings_page import SettingsPage
 from .theme import PALETTE
-from .widgets import Pill, repolish
+from .widgets import Pill, repolish, scrollable
 
 PAGES = [("operations", "Operations"), ("camera", "Camera"), ("calibration", "Calibration"), ("debug", "Debug"),
          ("settings", "Settings")]
@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
         self.pages = {"operations": OperationsPage(ctx), "camera": CameraPage(ctx, camera), "calibration": CalibrationPage(ctx),
                       "debug": DebugPage(ctx), "settings": SettingsPage(ctx)}
         for key, _ in PAGES:
-            self.stack.addWidget(self.pages[key])
+            self.stack.addWidget(scrollable(self.pages[key]))
         body.addWidget(self.stack, 1)
         outer.addLayout(body, 1)
         self._build_log()
@@ -143,6 +143,7 @@ class MainWindow(QMainWindow):
         if key not in keys:
             key = "operations"
         self.stack.setCurrentIndex(keys.index(key))
+        self.stack.widget(keys.index(key)).verticalScrollBar().setValue(0)
         self.nav_buttons[key].setChecked(True)
         self.ctx.settings.data["ui"]["page"] = key
 

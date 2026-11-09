@@ -5,7 +5,7 @@ from typing import Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtWidgets import (QDoubleSpinBox, QFormLayout, QFrame, QGroupBox, QLabel, QSizePolicy, QSpinBox,
+from PyQt6.QtWidgets import (QDoubleSpinBox, QFormLayout, QFrame, QGroupBox, QLabel, QScrollArea, QSizePolicy, QSpinBox,
                              QVBoxLayout, QWidget)
 
 
@@ -82,6 +82,17 @@ class ImageView(QLabel):
     def resizeEvent(self, ev) -> None:        # noqa: N802 (Qt naming)
         super().resizeEvent(ev)
         self._rescale()
+
+
+def scrollable(page: QWidget) -> QScrollArea:
+    """Wrap a page so that, when the window is too short for it, it SCROLLS instead of squeezing its contents flat."""
+    sa = QScrollArea()
+    sa.setObjectName("pagescroll")
+    sa.setWidgetResizable(True)
+    sa.setFrameShape(QFrame.Shape.NoFrame)
+    sa.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    sa.setWidget(page)
+    return sa
 
 
 def card(title: str) -> QGroupBox:
