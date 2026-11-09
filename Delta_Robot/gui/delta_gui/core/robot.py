@@ -361,6 +361,10 @@ class Robot:
             else:
                 self._emit("state")
             return
+        if text.startswith("WARN VACUUM_TIMEOUT"):          # the firmware switched the vacuum off by itself (safety timeout)
+            self.vacuum_on = False
+            self.log("The ESP32 switched the vacuum off by itself (it was on too long).", "warn")
+            return
         cmd = self.inflight
         if cmd is None:
             if not self._apply_pos(text) and text.startswith("ERR"):

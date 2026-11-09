@@ -69,7 +69,7 @@ only moves.** The Pi never sends motor commands, and only the PC talks to the ES
 | `pi/delta-vision.service`, `pi/install_service.sh` | Run the vision server automatically at boot (systemd). **You run the install script yourself; it uses `sudo`.** | not yet run on a Pi |
 | `pi/requirements.txt` | Python packages for the Pi (install inside a virtual environment). | — |
 | **`firmware/`** | **Code that runs on the ESP32.** | |
-| `firmware/Delta_Robot_ESP32/Delta_Robot_ESP32.ino` | Receives text commands over USB, makes the step pulses for the three motors so all arms arrive together, runs homing with limit switches. Open this folder in the Arduino IDE (the sketch must live in a folder of the same name). | **Original, unmodified.** |
+| `firmware/Delta_Robot_ESP32/Delta_Robot_ESP32.ino` | Receives text commands over USB, makes the step pulses for the three motors so all arms arrive together, runs homing with limit switches. Open this folder in the Arduino IDE (the sketch must live in a folder of the same name). | **Version 2 written and PC-tested, not flashed** (acceleration, vacuum on GPIO 17, safer homing). Original kept in `archive/`. See `docs/FIRMWARE.md`. |
 | **`docs/`** | Documentation. | |
 | `docs/PI_SETUP.md` | Step-by-step Raspberry Pi setup: what to check, installing the ToF SDK, testing the camera, the CSI boot overlay, VNC. | checklist, not yet run on the Pi |
 | `docs/GUI.md` | How the new control program works: pages, safety rules, what changed from the old one, settings file, code layout, tests, screenshots. | — |
@@ -90,7 +90,7 @@ projects), model weights (`*.pt`), datasets, videos, and anything with passwords
 | New PyQt6 GUI | **Built** and tested offscreen with the simulated ESP32 and camera (`docs/GUI.md`). **Not yet run on your Windows PC or the real robot.** |
 | Calibration tools in the GUI (geometry, home angles, camera→robot) | **Built and tested in simulation** (Calibration page: Machine, Home && axes, Camera → robot tabs). Not yet run on the real robot. |
 | Automated harvesting | **Built and tested in simulation only** (Harvest page, `docs/HARVEST.md`). Never run on the real robot; vacuum needs the Phase 7 firmware; default is a dry run. |
-| Firmware improvements (acceleration, vacuum, safer homing) | **Not started.** |
+| Firmware improvements (acceleration, vacuum, safer homing) | **Written and tested on a PC only** (`sh firmware/tests/run_tests.sh`). Not flashed; flash only after reading `docs/FIRMWARE.md`. |
 | Strawberry YOLO model | **Does not exist yet.** The stock YOLO models have no strawberry class (they detect people, cars, …). Automated picking must refuse to run with such a model. |
 
 ## Safety — read first

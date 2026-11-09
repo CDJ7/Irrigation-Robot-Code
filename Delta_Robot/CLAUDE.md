@@ -61,7 +61,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | 4 PyQt6 GUI | **built + tested offscreen with simulated hardware; not yet run on the user's PC** |
 | 5 Calibration tools | built + tested in simulation (home wizard, camera->robot wizard, PROBE protocol); not run on real robot/camera |
 | 6 Harvest state machine | built + tested in simulation (core/harvest.py, Harvest page, docs/HARVEST.md); never run on the real robot; vacuum needs Phase 7 firmware |
-| 7 Firmware | not started |
+| 7 Firmware | v2 written + PC-tested (53 checks, firmware/tests); NOT flashed; user decides when (docs/FIRMWARE.md) |
 | 8 Docs + final push | partly (README, docs); final push needs user's choice main vs branch/PR |
 
 ## Camera streaming to the GUI (done in code, not yet run on the real Pi/screen)
@@ -129,3 +129,8 @@ core/harvest.py (Harvester: preflight, stable tracking, closest-first, pick sequ
 Robot.vacuum() ('V 1'/'V 0', refused unless harvest.vacuum_enabled; E-STOP also sends V 0 when enabled), SimulatedESP32Link models the
 planned V command. Default = DRY RUN. Refuses a model without a strawberry class. Tests: test_core_harvest, test_gui_harvest.
 Sim log: docs/HARVEST_SIM_LOG.txt. Vacuum pin for Phase 7 still NOT given by the user.
+
+## Phase 7 (firmware v2) -- written, PC-tested, NOT flashed
+Vacuum = GPIO 17 active HIGH (user's choice; 35 was input-only). 10k pulldown recommended. Trapezoid accel, V 1/V 0/V?, queued commands during
+homing, debounce, NOT_ENABLED, BUSY for EN/Z while moving, micros() wrap fix. Tests: sh firmware/tests/run_tests.sh (g++ + fake Arduino shim; the
+wrap test reproduces the old bug in a mutated copy). Never flash without asking. Compiled only with g++, not the ESP32 toolchain. Tuning values are guesses.
