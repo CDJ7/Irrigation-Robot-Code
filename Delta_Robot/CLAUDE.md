@@ -58,7 +58,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | Earlier stereo-USB Pi server (pi/) | written; passes synthetic tests only; NOT run on the Pi |
 | 2 Pi set-up (stereo path now; ToF only if one turns up) + VNC | tools written + tested vs stand-in SDK (pi/tof/, docs/PI_SETUP.md); **waiting for the user to run them on the Pi** (no Pi access from here; sudo/boot-config/reboot need approval) |
 | 3 ToF vision server | not started |
-| 4 PyQt6 GUI | not started |
+| 4 PyQt6 GUI | **built + tested offscreen with simulated hardware; not yet run on the user's PC** |
 | 5 Calibration tools | not started |
 | 6 Harvest state machine | not started |
 | 7 Firmware | not started |
@@ -76,6 +76,37 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 `python calibrate_stereo.py solve --square-mm <measured>` -> calibration/stereo_calib.npz (server loads it; J says calibrated:true).
 Board: pi/checkerboard_9x6_25mm_letter.svg printed at 100%, square size measured with a ruler. Measured speed with the first
 real test: server 6.2 fps (YUYV 1280x480, SGBM 128 disparities on 640x480 eyes, uncalibrated, no YOLO) -- slow; investigate stereo ms.
+
+## First real stereo calibration (user's Pi, 640x480 per eye, 9x6 board, 25 mm nominal square)
+22 of 30 pairs used; stereo RMS 0.391 px, row error 0.160 px, focal 726.3 px, baseline 62.24 mm (to verify with a ruler),
+principal point (386.3, 227.2) after rectification (alpha=0). Nearest measurable distance with num_disparities=128 is 353 mm ->
+raise num_disparities (192/256) if strawberries are closer than ~35 cm; waiting for the user's working distance. The top third
+of the picture was never covered in this run (capture now enforces coverage). Files on the Pi: ~/Delta_Robot/pi/calibration/
+(stereo_calib.npz, stereo_calib_report.txt, rectify_check.jpg). Ruler check at 40/60 cm still to be done; Live Camera tab now
+shows 'centre distance' for it.
+
+## Working geometry (user, 2026-11-02)
+Camera mounted at an ANGLE (not straight down); closest point 70 cm, farthest 93 cm, "as the crow flies" (line of sight, i.e. radial
+distance; the Z we compute is along the optical axis, ~13% smaller at the picture corners). With margin ~55-100 cm -> disparity ~45-82 px
+(focal 726, baseline 62.2) -> config now min_disparity 32, num_disparities 64 (half the cost of 128), depth min_z 400 / max_z 1200 mm.
+Precision there: 1 px of disparity = 11 mm at 70 cm, 19 mm at 93 cm; typical error ~3-6 mm (to confirm with the ruler test).
+Small objects: a 30 mm strawberry is ~31 px wide at 70 cm in the 640x480 eye -> YOLO imgsz 320 would halve that; plan imgsz 640 (or
+train on crops) and consider the 1600x600 / 2560x800 camera modes later if precision is insufficient. Camera-to-robot transform is
+calibrated by jogging the effector (Kabsch), so the camera tilt does not need to be measured.
+
+## New PyQt6 GUI (Phase 4 done in code; offscreen/simulated tests only)
+gui/Delta_Robot_GUI.py (entry) + gui/delta_gui/{core,ui}. core = Qt-free: kinematics.py (IK, FK, radius->side, steps), link.py (SerialLink +
+SimulatedESP32Link reproducing firmware quirks), robot.py (ALL motion safety: single command in flight, reply matching, latched E-STOP,
+position-unknown rules, drivers-enabled guard, joint limits, step-rate limit, timeouts), settings.py (~/.delta_robot/settings.json, atomic),
+transform.py (Kabsch camera->robot). ui = theme, drawn icons, pages (operations/camera/calibration/debug/settings), main window with the E-STOP in the
+sidebar (Esc shortcut), camera controller (QThread pump; simulated camera runs the real Pi server in-process). Old Tk GUI kept as
+Delta_Robot_GUI_tkinter.py. Docs: docs/GUI.md + docs/screenshots/.
+Findings: original IK `f`,`e` are triangle SIDE lengths (side = 2*sqrt(3)*radius) -> new GUI takes radii. Tests caught a real bug (guard Result truthiness: a
+refused action was falsy and ignored) -> use `is not None`. Qt NoButtons on styled spin boxes blanks the text -> hide buttons via stylesheet.
+Defaults: workspace +-100 x +-100, Z -350..-210 (fully reachable with rf 150/re 280); theta limits -30..80 UNVERIFIED; step rate 4000/s UNVERIFIED.
+Dev sandbox note: PyQt6 offscreen needs libEGL; a private stub lib (LD_LIBRARY_PATH) was used in the cloud VM only. On the user's PC nothing special.
+NEXT (not started): Phase 5 calibration tools (home angle procedure, camera->robot jog procedure UI), Phase 6 harvest state machine, Phase 7 firmware,
+Phase 8 docs/push decision (main vs branch+PR; repo licence).
 
 ## Calibration status
 Stereo: n/a for ToF. Intrinsics: from SDK (to verify). Home/offsets/HOME_XYZ: uncalibrated (HOME_XYZ placeholder (0,0,-200)).

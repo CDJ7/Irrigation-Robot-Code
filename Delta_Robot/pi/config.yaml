@@ -29,11 +29,14 @@ stereo:
   nominal_focal_px: 600.0
   nominal_baseline_mm: 60.0
   matcher: sgbm         # "sgbm" (better, smoother) or "bm" (faster, noisier)
-  # How many pixels of horizontal shift the matcher searches. Must be a multiple of 16.
-  # Nearest measurable distance = focal_px * baseline_mm / num_disparities.
-  # (calibrate_stereo.py prints this number for you.) Bigger = can see closer, slower.
-  num_disparities: 128
-  min_disparity: 0
+  # The matcher searches disparities (horizontal shifts, in pixels) from min_disparity to min_disparity+num_disparities-1.
+  # Distance Z = focal_px * baseline_mm / disparity. A smaller range is FASTER (cost is proportional to num_disparities),
+  # so search only what the working distance needs. num_disparities must be a multiple of 16.
+  # Working distance (user): 70-93 cm from the camera, measured along the line of sight; with margin ~55-100 cm. With the first
+  # real calibration (focal 726 px, baseline 62.2 mm) that is disparity 45-82 px -> min 32, num 64 sees Z = 476..1413 mm.
+  # `python calibrate_stereo.py solve --square-mm 25 --work-range 550 1000` prints the recommended values for YOUR calibration.
+  num_disparities: 64
+  min_disparity: 32
   block_size: 5         # odd number; bigger = smoother but blurrier at edges
   uniqueness_ratio: 10
   speckle_window: 100
@@ -48,8 +51,8 @@ depth:
   patch_fraction: 0.5   # use the central 50% (width and height) of the bounding box
   min_valid_fraction: 0.2   # need at least 20% of that patch to have valid disparity
   min_pixels: 9
-  min_z_mm: 100.0       # readings outside this range are reported as null
-  max_z_mm: 2000.0
+  min_z_mm: 400.0       # readings outside this range are reported as null (working distance ~550-1000 mm)
+  max_z_mm: 1200.0
 
 detection:
   # OFF until ultralytics is installed (pip install ultralytics) and a strawberry model exists. With it off the server

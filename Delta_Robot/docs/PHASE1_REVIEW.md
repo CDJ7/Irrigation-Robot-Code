@@ -22,6 +22,10 @@ repositories. **Nothing here was tested on the real robot.** Ranked by how much 
    `rf/re/e` disagree between file versions; `HOME_XYZ` and per-axis offsets are placeholders although step 0 is the
    limit-switch position while kinematics work in real arm angles.
 
+10. **The original kinematics treat `f` and `e` as triangle SIDE lengths, not radii.** The code offsets the shoulder joint by `0.5·tan30·f`, so a
+    base *radius* r (centre → motor axis) needs `f = 2√3·r` (76.2 mm → 264.0 mm). Typing a radius into the old `f` box shrinks the geometry 3.5×
+    and shifts the computed arm angles by about 12° at the same XYZ. The new GUI asks for radii and converts (see `docs/GUI.md`).
+
 ## P1 — vision and communication
 10. `pi_camera_server.py` (original): fake depth; no YOLO; opens the camera once **per client**; requests 640×480; systemd
     example uses `/home/pi`; recommends the obsolete `bcm2835-v4l2`.

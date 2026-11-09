@@ -23,7 +23,7 @@ def make_server(port=0):
     cfg = srv.load_config(os.path.join(ROOT, "pi", "config.yaml"))
     cfg["network"].update(tcp_port=port, http_port=None, target_fps=30, send_timeout_s=1.0)
     cfg["stereo"].update(calibration_file="/nonexistent", nominal_focal_px=280.0, nominal_baseline_mm=60.0,
-                         num_disparities=64)
+                         num_disparities=64, min_disparity=0)
     cfg["dataset"]["enabled"] = False
     s = srv.PiCameraServer(cfg, FakeStereoCamera(), FakeDetector(), cfg["dataset"])
     s.start()

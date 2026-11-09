@@ -1,6 +1,8 @@
 # Install on the Windows PC (the machine that runs the GUI):
 #   pip install -r requirements.txt
+PyQt6             # the interface
 pyserial          # ESP32 serial link
-pillow            # shows camera pictures in Tkinter
 numpy
 opencv-python     # decodes the camera stream
+pillow            # only for the old Tkinter program (Delta_Robot_GUI_tkinter.py)
+pyyaml            # only for the "Simulated camera" test mode (it runs the Pi server inside the GUI)

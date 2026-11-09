@@ -22,6 +22,9 @@ def detection_label(d: Dict) -> str:
         text += f"  X{xyz[0]:.0f} Y{xyz[1]:.0f} Z{xyz[2]:.0f}"
     else:
         text += "  no depth"
+    rob = d.get("robot_xyz")                       # filled in by the GUI once the camera-to-robot calibration exists
+    if rob:
+        text += f" -> robot {rob[0]:.0f},{rob[1]:.0f},{rob[2]:.0f}"
     return text
 
 
@@ -70,8 +73,26 @@ def summarize_frame(det: Dict) -> Tuple[str, bool]:
     fps = det.get("server_fps", 0)
     model = det.get("model") or "no detector"
     txt = f"frame {det.get('seq', '?')} | Pi {fps:.1f} fps | model: {model}"
+    probe = (det.get("center_probe") or {}).get("xyz_mm")          # depth at the middle of the picture (for ruler checks)
+    txt += f" | centre distance: {probe[2]:.0f} mm" if probe else " | centre distance: n/a"
     if not calibrated:
         txt += " | UNCALIBRATED: depth values are NOT trustworthy"
     if det.get("model") and not det.get("model_has_allowed_class"):
         txt += " | model has no allowed (strawberry) class"
     return txt, calibrated
+
+
+def draw_crosshair(img_rgb: np.ndarray, pixel: Tuple[float, float], label: str = "") -> np.ndarray:
+    """Return a COPY with a crosshair at `pixel` (where the effector appears in the picture), if it is inside the picture."""
+    out = img_rgb.copy()
+    h, w = out.shape[:2]
+    u, v = int(round(pixel[0])), int(round(pixel[1]))
+    if not (0 <= u < w and 0 <= v < h):
+        return out
+    colour = (255, 210, 0)
+    cv2.circle(out, (u, v), 12, colour, 2, cv2.LINE_AA)
+    cv2.line(out, (u - 20, v), (u + 20, v), colour, 1, cv2.LINE_AA)
+    cv2.line(out, (u, v - 20), (u, v + 20), colour, 1, cv2.LINE_AA)
+    if label:
+        cv2.putText(out, label, (min(u + 16, w - 90), max(v - 14, 14)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 1, cv2.LINE_AA)
+    return out

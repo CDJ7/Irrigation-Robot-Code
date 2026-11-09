@@ -521,6 +521,11 @@ class VisionPipeline(threading.Thread):
                 continue
             if self.rect is None:             # created on first frame so we know the eye size
                 self.rect = StereoRectifier(self.cfg, (left.shape[1], left.shape[0]))
+                fB = self.rect.intrinsics["fx"] * self.rect.intrinsics["baseline_mm"]
+                lo, hi = self.matcher.min_disp, self.matcher.min_disp + self.matcher.num_disp - 1
+                log.info("Stereo search range: disparity %d..%d px -> sees Z = %.0f..%.0f mm (focal %.0f px, baseline %.1f mm, calibrated=%s)",
+                         lo, hi, fB / hi, fB / max(lo, 1), self.rect.intrinsics["fx"], self.rect.intrinsics["baseline_mm"],
+                         self.rect.calibrated)
             left, right = self.rect.rectify(left, right)
             self._maybe_save_dataset(left, capture_ts)
 
