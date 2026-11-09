@@ -89,7 +89,7 @@ projects), model weights (`*.pt`), datasets, videos, and anything with passwords
 | Camera | The Pi's own inspection found **only a USB stereo camera** ("3D Global Shutter Camera", 2 × ~1 MP) and **no ToF camera**. The stereo server fits it; ToF tools are kept in case a ToF camera is connected later. |
 | New PyQt6 GUI | **Built** and tested offscreen with the simulated ESP32 and camera (`docs/GUI.md`). **Not yet run on your Windows PC or the real robot.** |
 | Calibration tools in the GUI (geometry, home angles, camera→robot) | **Built and tested in simulation** (Calibration page: Machine, Home && axes, Camera → robot tabs). Not yet run on the real robot. |
-| Automated harvesting | **Not started.** |
+| Automated harvesting | **Built and tested in simulation only** (Harvest page, `docs/HARVEST.md`). Never run on the real robot; vacuum needs the Phase 7 firmware; default is a dry run. |
 | Firmware improvements (acceleration, vacuum, safer homing) | **Not started.** |
 | Strawberry YOLO model | **Does not exist yet.** The stock YOLO models have no strawberry class (they detect people, cars, …). Automated picking must refuse to run with such a model. |
 

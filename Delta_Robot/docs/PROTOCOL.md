@@ -21,6 +21,10 @@ when it boots. The ESP32 does **no kinematics**: it only turns step counts into 
 | `STOP` | Abort the move in progress. | `ERR STOPPED` (if it was moving) then `POS s1 s2 s3` |
 | `P?` | Report position. | `POS s1 s2 s3` |
 
+**Planned (Phase 7, not in the current firmware):** `V 1` / `V 0` switch the vacuum (reply `OK`); `STOP` also switches it off. The GUI
+only sends them when `harvest.vacuum_enabled` is on; the simulated ESP32 already behaves this way. Today's firmware answers an unknown
+command with an error.
+
 Things to know (see `PHASE1_REVIEW.md`):
 
 * `OK` means both "move finished" and "EN command accepted". A host must not treat every `OK` as a move completion.

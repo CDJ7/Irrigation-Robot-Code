@@ -60,7 +60,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | 3 ToF vision server | not started |
 | 4 PyQt6 GUI | **built + tested offscreen with simulated hardware; not yet run on the user's PC** |
 | 5 Calibration tools | built + tested in simulation (home wizard, camera->robot wizard, PROBE protocol); not run on real robot/camera |
-| 6 Harvest state machine | not started |
+| 6 Harvest state machine | built + tested in simulation (core/harvest.py, Harvest page, docs/HARVEST.md); never run on the real robot; vacuum needs Phase 7 firmware |
 | 7 Firmware | not started |
 | 8 Docs + final push | partly (README, docs); final push needs user's choice main vs branch/PR |
 
@@ -123,3 +123,9 @@ repo licence; main vs branch+PR for the final push.
 core/calibration.py (home_calibration, nudge_steps, ProbeCollector, CameraCalibrationSession, suggest_points), PROBE channel (pi server +
 camera_client.send_probe), ui/pages/home_wizard.py + camera_wizard.py inside the Calibration page tabs. Tests: test_core_calibration,
 test_camera_probe, test_gui_wizards. Wizard moves always ask first. Lessons: chain commands with && and commit only when ALL tests pass.
+
+## Phase 6 (automatic picking) -- done in code, simulation only
+core/harvest.py (Harvester: preflight, stable tracking, closest-first, pick sequence via Robot.move_xyz, ends safely with vacuum off),
+Robot.vacuum() ('V 1'/'V 0', refused unless harvest.vacuum_enabled; E-STOP also sends V 0 when enabled), SimulatedESP32Link models the
+planned V command. Default = DRY RUN. Refuses a model without a strawberry class. Tests: test_core_harvest, test_gui_harvest.
+Sim log: docs/HARVEST_SIM_LOG.txt. Vacuum pin for Phase 7 still NOT given by the user.

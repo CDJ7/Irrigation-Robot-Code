@@ -67,7 +67,7 @@ def main():
         p.start()
 
     # ----------------------------------------------------------------- 1. structure + E-STOP on every page
-    assert [k for k, _ in PAGES] == ["operations", "camera", "calibration", "debug", "settings"]
+    assert [k for k, _ in PAGES] == ["operations", "camera", "calibration", "harvest", "debug", "settings"]
     for key, _ in PAGES:
         win._show_page(key); QTest.qWait(30)
         b = win.estop_btn

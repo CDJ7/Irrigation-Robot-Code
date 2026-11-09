@@ -8,6 +8,7 @@ from typing import Callable, Optional
 
 from PyQt6.QtCore import QObject, QTimer, pyqtSignal
 
+from ..core import harvest as harvest_core
 from ..core.link import LinkBase, SerialLink, SimulatedESP32Link
 from ..core.robot import Robot
 from ..core.settings import Settings
@@ -32,6 +33,14 @@ class AppContext(QObject):
         self.robot.listeners.append(self._forward)
         self._line.connect(self.robot.on_line)      # queued across threads automatically
         self._link_state.connect(self.robot.on_link_state)
+        # automatic picking: Qt-free state machine; its log lines join the system log, and it is ticked 10x per second
+        log_file = str(self.settings.path.with_name("harvest_log.jsonl"))
+        self.harvester = harvest_core.Harvester(self.robot, settings, lambda: self.calibration, log_path=log_file)
+        self.harvester.listeners.append(lambda ev, d: self.log.emit(d["text"], d["level"]) if ev == "log" else None)
+        self.harvest_timer = QTimer(self)
+        self.harvest_timer.setInterval(100)
+        self.harvest_timer.timeout.connect(self.harvester.tick)
+        self.harvest_timer.start()
         self.watchdog = QTimer(self)
         self.watchdog.setInterval(200)
         self.watchdog.timeout.connect(self.robot.tick)
@@ -81,6 +90,7 @@ class AppContext(QObject):
 
     def shutdown(self) -> None:
         self.watchdog.stop()
+        self.harvest_timer.stop()
         self.disconnect_esp32(quiet=True)
 
     # --------------------------------------------------------------------------- settings

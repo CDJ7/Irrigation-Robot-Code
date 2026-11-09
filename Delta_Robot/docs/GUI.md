@@ -119,3 +119,7 @@ ESP32 with the motors' power switch within reach and do nothing but *Enable* and
   then shows robot X/Y/Z for each detection. Needs at least 4 points; 8 or more recommended.
 
 Tests: `gui/tests/test_gui_wizards.py` drives both wizards end-to-end against a simulated ESP32 and known truth data.
+
+## Harvest page (Phase 6)
+Pre-flight checklist, **Start picking** (asks first), **Stop** (finish the step, vacuum off), live state, settings and a pick log.
+The E-STOP ends a run at once. Details: `docs/HARVEST.md`. Default mode is a **DRY RUN** (moves only, no vacuum).

@@ -59,6 +59,7 @@ class Robot:
         self.current_steps: List[int] = [0, 0, 0]
         self.current_xyz: List[float] = [0.0, 0.0, 0.0]
         self.estopped = False
+        self.vacuum_on = False                           # what we last told the ESP32 (only meaningful when vacuum is enabled)
         self.inflight: Optional[Command] = None
         self.apply_settings()
         if link is not None:
@@ -138,6 +139,7 @@ class Robot:
         self.log(message, "info" if connected else "warn")
         self.connected = connected
         self.inflight = None
+        self.vacuum_on = False
         if connected:
             self.drivers_enabled = False        # the firmware boots with the drivers off
             self.estopped = False
@@ -262,6 +264,16 @@ class Robot:
             return r
         return self._begin(Command("EN1" if on else "EN0", "EN 1" if on else "EN 0", self.clock() + 3.0))
 
+    def vacuum(self, on: bool) -> Result:
+        """'V 1' / 'V 0'. Needs the Phase-7 firmware (the current firmware answers ERR UNKNOWN_CMD). Refused unless the harvest setting
+        vacuum_enabled is on, so a machine without the firmware never receives it by accident."""
+        if not self.settings.data["harvest"]["vacuum_enabled"]:
+            return Result(False, "vacuum is disabled in the settings (dry run)")
+        r = self._guard()
+        if r is not None:
+            return r
+        return self._begin(Command("V1" if on else "V0", "V 1" if on else "V 0", self.clock() + 3.0))
+
     def query_position(self) -> Result:
         r = self._guard()
         if r is not None:
@@ -277,6 +289,9 @@ class Robot:
         self.log("EMERGENCY STOP", "error")
         if self.connected:
             self._send("STOP")
+            if self.settings.data["harvest"]["vacuum_enabled"]:
+                self._send("V 0")                   # belt and braces: the firmware should do this on STOP too
+                self.vacuum_on = False
             if self.settings.data["safety"]["estop_disables_drivers"]:
                 self._send("EN 0")
                 self.drivers_enabled = False
@@ -338,6 +353,7 @@ class Robot:
             # ESP32 reset by itself (brown-out, watchdog) and has forgotten where the arms are.
             unexpected = self.inflight is not None or self.xyz_valid or self.drivers_enabled
             self.drivers_enabled = False
+            self.vacuum_on = False
             self.inflight = None
             if unexpected:
                 self.log("The ESP32 restarted unexpectedly (brown-out or reset). Position lost.", "error")
@@ -376,6 +392,15 @@ class Robot:
                 self._done()
             elif text.startswith("ERR"):
                 self._failed(cmd, text)
+        elif cmd.kind in ("V1", "V0"):
+            if text == "OK":
+                self.vacuum_on = cmd.kind == "V1"
+                self._done()
+            elif text.startswith("ERR"):
+                self.inflight = None                  # position is unaffected, but we no longer know the vacuum state
+                self.vacuum_on = False
+                self.log(f"Vacuum command failed ({text}). Does the firmware support V 1 / V 0?", "error")
+                self._emit("state")
         elif cmd.kind == "P":
             if self._apply_pos(text):
                 self._done()

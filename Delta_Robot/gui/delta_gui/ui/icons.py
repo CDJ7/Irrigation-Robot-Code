@@ -37,6 +37,10 @@ def make_icon(name: str, color: str = "#c9d1dc", size: int = 40) -> QIcon:
     elif name == "calibration":                    # crosshair
         p.drawEllipse(QPointF(cx, cy), s * .24, s * .24)
         p.drawLine(QPointF(cx, m * .6), QPointF(cx, s - m * .6)); p.drawLine(QPointF(m * .6, cy), QPointF(s - m * .6, cy))
+    elif name == "harvest":                        # a berry with a stem
+        p.drawEllipse(QPointF(cx, s * .58), s * .24, s * .26)
+        p.drawLine(QPointF(cx, s * .32), QPointF(cx, s * .16)); p.drawLine(QPointF(cx, s * .24), QPointF(s * .66, s * .18))
+        p.drawLine(QPointF(cx, s * .24), QPointF(s * .34, s * .18))
     elif name == "debug":                          # terminal prompt  >_
         p.drawLine(QPointF(s * .22, s * .30), QPointF(s * .44, s * .50)); p.drawLine(QPointF(s * .44, s * .50), QPointF(s * .22, s * .70))
         p.drawLine(QPointF(s * .52, s * .72), QPointF(s * .78, s * .72))
