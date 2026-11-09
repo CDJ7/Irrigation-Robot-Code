@@ -159,6 +159,8 @@ class SimulatedESP32Link(LinkBase):
         self._homing = False
         self.sent: List[str] = []            # every line received (for tests)
         self.drop_replies = 0                # test hook: swallow this many replies
+        self.vacuum = False                  # models the PLANNED firmware 'V 1'/'V 0' (the current firmware has no vacuum)
+        self.vacuum_supported = True         # test hook: False = behave like the CURRENT firmware (ERR UNKNOWN_CMD)
 
     # ---------------------------------------------------------------- link interface
     def connect(self, target: str = "SIM", baud: int = 115200) -> None:
@@ -192,7 +194,7 @@ class SimulatedESP32Link(LinkBase):
         with self._lock:
             self._cancel_timers()
             self._move, self._homing = None, False
-            self.steps, self.enabled = [0, 0, 0], False
+            self.steps, self.enabled, self.vacuum = [0, 0, 0], False, False
         self._reply("READY DeltaRobotSlave")
 
     def inject_link_loss(self) -> None:
@@ -241,6 +243,9 @@ class SimulatedESP32Link(LinkBase):
                     return self._reply("OK")
                 self._move = (time.monotonic(), dur, list(self.steps), target)
                 self._after(dur, self._finish_move)
+            elif line in ("V 1", "V 0") and self.vacuum_supported:
+                self.vacuum = line == "V 1"
+                self._reply("OK")
             elif line == "H":
                 if self._move:
                     return self._reply("ERR BUSY")
@@ -253,6 +258,7 @@ class SimulatedESP32Link(LinkBase):
                 self.enabled = "1" in line
                 self._reply("OK")
             elif line == "STOP":
+                self.vacuum = False                # the planned firmware switches the vacuum off on STOP
                 if self._homing:
                     self._cancel_timers()
                     self._homing = False

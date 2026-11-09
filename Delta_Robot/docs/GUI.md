@@ -103,3 +103,23 @@ quirks* (the ambiguous `OK`, homing that swallows other commands, `Z` accepted w
 The GUI has been run only offscreen on a Linux test machine with simulated hardware. **Not yet checked: on your Windows screen, with the real
 ESP32, with the real camera stream through this new window.** The first thing to do on your PC is run it in simulation, then connect the real
 ESP32 with the motors' power switch within reach and do nothing but *Enable* and look at the log.
+
+## Calibration page (Phase 5): three tabs
+
+* **Machine** – geometry (base/effector radius, arm lengths), drivers (microsteps, gearbox), speed limits, workspace box.
+* **Home && axes** – the *home wizard*. Step 1: for each arm press **Nudge**; the arm turns a few degrees (a raw move, so the position
+  becomes unknown) and you answer whether it moved UP or DOWN; an arm that went up gets **Invert** ticked. Step 2: with the arms at the
+  home position, measure each bicep angle (0 = horizontal, positive = down) and enter it; **Compute** gives the angle offsets and the
+  HOME XYZ from forward kinematics, **Use these values** fills the fields, **Apply and save** commits them. Nothing is saved before that.
+* **Camera -> robot** – the *camera wizard*. Needs a calibrated stereo camera, a homed robot and a marker you can click on the live
+  picture (e.g. a small coloured dot on the effector). **Suggest points** lists 8 well-spread robot positions inside the workspace;
+  for each: **Go** (asks first, then moves), click the marker in the picture, **Record** (averages 8 readings; refuses if there is no
+  depth, if the readings jump by more than 4 mm, or if the robot moved). **Solve** fits a rigid transform (Kabsch) and reports the RMS
+  error, per-point errors, and warnings (outliers, all points at one height, mirrored camera). **Accept** saves it; the Camera page
+  then shows robot X/Y/Z for each detection. Needs at least 4 points; 8 or more recommended.
+
+Tests: `gui/tests/test_gui_wizards.py` drives both wizards end-to-end against a simulated ESP32 and known truth data.
+
+## Harvest page (Phase 6)
+Pre-flight checklist, **Start picking** (asks first), **Stop** (finish the step, vacuum off), live state, settings and a pick log.
+The E-STOP ends a run at once. Details: `docs/HARVEST.md`. Default mode is a **DRY RUN** (moves only, no vacuum).

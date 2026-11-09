@@ -14,12 +14,13 @@ from .icons import make_icon
 from .pages.calibration import CalibrationPage
 from .pages.camera import CameraPage
 from .pages.debug import DebugPage
+from .pages.harvest import HarvestPage
 from .pages.operations import OperationsPage
 from .pages.settings_page import SettingsPage
 from .theme import PALETTE
-from .widgets import Pill, repolish
+from .widgets import Pill, repolish, scrollable
 
-PAGES = [("operations", "Operations"), ("camera", "Camera"), ("calibration", "Calibration"), ("debug", "Debug"),
+PAGES = [("operations", "Operations"), ("camera", "Camera"), ("calibration", "Calibration"), ("harvest", "Harvest"), ("debug", "Debug"),
          ("settings", "Settings")]
 LOG_COLOURS = {"info": PALETTE["text"], "warn": PALETTE["warn"], "error": PALETTE["danger"], "tx": "#7aa2f7", "rx": "#9ece6a"}
 
@@ -37,10 +38,10 @@ class MainWindow(QMainWindow):
         body = QHBoxLayout(); body.setContentsMargins(0, 0, 0, 0); body.setSpacing(0)
         body.addWidget(self._build_sidebar())
         self.stack = QStackedWidget()
-        self.pages = {"operations": OperationsPage(ctx), "camera": CameraPage(ctx, camera), "calibration": CalibrationPage(ctx),
+        self.pages = {"operations": OperationsPage(ctx), "camera": CameraPage(ctx, camera), "calibration": CalibrationPage(ctx, camera), "harvest": HarvestPage(ctx),
                       "debug": DebugPage(ctx), "settings": SettingsPage(ctx)}
         for key, _ in PAGES:
-            self.stack.addWidget(self.pages[key])
+            self.stack.addWidget(scrollable(self.pages[key]))
         body.addWidget(self.stack, 1)
         outer.addLayout(body, 1)
         self._build_log()
@@ -53,6 +54,7 @@ class MainWindow(QMainWindow):
         ctx.connection_changed.connect(self._on_connection)
         camera.status.connect(self._on_camera_status)
         camera.detections.connect(self._on_camera_det)
+        camera.detections.connect(ctx.harvester.on_detections)
         self._show_page(ctx.settings.data["ui"].get("page", "operations"))
         self._on_state(self.robot.snapshot())
         self._on_camera_status({"state": "stopped", "message": ""})
@@ -143,6 +145,7 @@ class MainWindow(QMainWindow):
         if key not in keys:
             key = "operations"
         self.stack.setCurrentIndex(keys.index(key))
+        self.stack.widget(keys.index(key)).verticalScrollBar().setValue(0)
         self.nav_buttons[key].setChecked(True)
         self.ctx.settings.data["ui"]["page"] = key
 

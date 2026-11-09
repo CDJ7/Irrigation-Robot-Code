@@ -61,7 +61,7 @@ win.pages["camera"].sim_chk.setChecked(True); win.pages["camera"].connect_btn.cl
 wait_for(lambda: win.pages["camera"].table.rowCount() == 3 and win.pages["camera"].video._pix is not None)
 win.pages["camera"].table.selectRow(0)
 shot("camera")
-for key in ("calibration", "debug", "settings"):
+for key in ("calibration", "harvest", "debug", "settings"):
     win._show_page(key); shot(key)
 r.estop(); QTest.qWait(300); win._show_page("operations"); shot("estop_active")
 win.close()

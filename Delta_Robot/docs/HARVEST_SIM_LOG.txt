@@ -1,0 +1,49 @@
+SIMULATED ESP32 + SIMULATED CAMERA (nothing real moved)
+
+Harvest started: LIVE vacuum, up to 3 picks, classes ['strawberry'].
+Pick 1: strawberry #2 conf 0.90 at robot XYZ (30.0, 20.0, -290.0) mm, jitter 0.0 mm.
+M 4757 -2022 4282 79
+OK
+M 12457 7119 12090 152
+OK
+V 1
+OK
+M 4757 -2022 4282 152
+OK
+M 7418 -1340 15241 182
+OK
+V 0
+OK
+Pick 1 completed (sequence ran; not verified)
+Pick 2: strawberry #7 conf 0.90 at robot XYZ (-40.0, 10.0, -300.0) mm, jitter 0.0 mm.
+M 5100 7300 -672 265
+OK
+M 12941 14663 8309 149
+OK
+V 1
+OK
+M 5100 7300 -672 149
+OK
+M 7418 -1340 15241 265
+OK
+V 0
+OK
+Pick 2 completed (sequence ran; not verified)
+Strawberry #11 skipped: approach pose [40.0, 40.0, -155.0]: Z=-155.0 is outside the workspace box [-350.0, -210.0]
+Pick 3: strawberry #10 conf 0.90 at robot XYZ (60.0, -50.0, -280.0) mm, jitter 0.0 mm.
+M -3782 -854 11586 186
+OK
+M 5674 8031 17579 157
+OK
+V 1
+OK
+M -3782 -854 11586 157
+OK
+M 7418 -1340 15241 186
+OK
+V 0
+OK
+Pick 3 completed (sequence ran; not verified)
+Harvest finished: DONE (reached the limit of 3 picks); 3 pick(s), 1 skipped.
+
+final state: DONE - reached the limit of 3 picks

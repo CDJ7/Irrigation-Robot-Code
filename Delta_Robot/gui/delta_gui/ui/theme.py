@@ -45,7 +45,7 @@ QPushButton#primary:disabled {{ background: #26406b; color: #7f8da6; border-colo
 QPushButton#warning {{ background: #3b2e0e; border-color: {p['warn']}; color: {p['warn']}; }}
 
 /* ---- the E-STOP: big, red, impossible to miss ---- */
-QPushButton#estop {{ background: {p['danger']}; border: 3px solid #fecaca; border-radius: 12px; color: white;
+QPushButton#estop {{ min-height: 80px; background: {p['danger']}; border: 3px solid #fecaca; border-radius: 12px; color: white;
                      font-size: 17px; font-weight: 800; padding: 14px 8px; }}
 QPushButton#estop:hover {{ background: #f87171; }}
 QPushButton#estop:pressed {{ background: {p['danger_dark']}; }}
@@ -76,6 +76,8 @@ QLabel#check[level="bad"] {{ color: {p['danger']}; }}
 /* ---- inputs ---- */
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{ background: {p['panel2']}; border: 1px solid {p['border']}; border-radius: 6px;
                                                    padding: 5px 8px; selection-background-color: {p['accent']}; }}
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{ min-height: 24px; }}
+QPushButton {{ min-height: 20px; }}
 QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {{ border-color: {p['accent']}; }}
 QComboBox QAbstractItemView {{ background: {p['panel2']}; selection-background-color: {p['accent']}; border: 1px solid {p['border']}; }}
 QAbstractSpinBox::up-button, QAbstractSpinBox::down-button {{ width: 0px; height: 0px; border: none; margin: 0; padding: 0; }}
@@ -97,4 +99,5 @@ QScrollBar::handle:vertical {{ background: {p['border']}; border-radius: 5px; mi
 QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; width: 0; }}
 QLabel#video {{ background: #0b0d11; border: 1px solid {p['border']}; border-radius: 8px; color: {p['muted']}; }}
 QFrame#sep {{ background: {p['border']}; max-height: 1px; }}
+QScrollArea#pagescroll, QScrollArea#pagescroll QWidget#qt_scrollarea_viewport {{ background: {p['bg']}; border: none; }}
 """

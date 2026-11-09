@@ -6,31 +6,39 @@ calibration.py -- everything that describes the physical machine, in one place.
   * axes:     angle offsets, direction, allowed arm-angle range
   * home:     the XYZ the robot is assumed to be at after homing, and a check that it agrees with the axis offsets
   * workspace box, with a live check that the whole box is reachable
-  * camera-to-robot calibration status
+  * the guided home calibration and the guided camera-to-robot calibration (wizards)
 Nothing takes effect until "Apply and save" (which is refused while the robot is moving).
 """
 import copy
 import itertools
 
-from PyQt6.QtWidgets import (QCheckBox, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QScrollArea,
+from PyQt6.QtWidgets import (QCheckBox, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTabWidget,
                              QVBoxLayout, QWidget)
 
 from ...core.kinematics import DeltaKinematics, Workspace, joint_limit_violation, radius_to_side
 from ...core.settings import validate
 from ..widgets import CheckLabel, card, ibox, spin
+from .camera_wizard import CameraWizard
+from .home_wizard import HomeWizard
 
 
 class CalibrationPage(QWidget):
-    def __init__(self, ctx):
+    def __init__(self, ctx, camera):
         super().__init__()
         self.setObjectName("page")
         self.ctx = ctx
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        area = QScrollArea(); area.setWidgetResizable(True); area.setFrameShape(QScrollArea.Shape.NoFrame)
-        outer.addWidget(area)
-        body = QWidget(); body.setObjectName("page"); area.setWidget(body)
-        root = QVBoxLayout(body); root.setContentsMargins(18, 14, 18, 14); root.setSpacing(14)
+        root = QVBoxLayout(self); root.setContentsMargins(18, 14, 18, 14); root.setSpacing(14)
+        self.tabs = QTabWidget()
+        root.addWidget(self.tabs)
+        tab_layouts = []
+        for title in ("Machine", "Home && axes", "Camera \u2192 robot"):
+            holder = QWidget(); holder.setObjectName("page")
+            lay = QVBoxLayout(holder); lay.setContentsMargins(0, 12, 0, 0); lay.setSpacing(14)
+            self.tabs.addTab(holder, title)
+            tab_layouts.append(lay)
+        t_machine, t_home, t_cam = tab_layouts
+        self.home_wizard = HomeWizard(ctx, self)         # (it only touches this page's fields when a button is pressed)
+        t_home.addWidget(self.home_wizard)
 
         # ---------------------------------------------------------------- geometry
         g = card("Robot geometry   (measure these; values marked ? are unverified)")
@@ -43,7 +51,7 @@ class CalibrationPage(QWidget):
         f.addRow("Forearm length  (elbow → effector joint) ?", self.fore)
         self.sides = QLabel(""); self.sides.setObjectName("muted"); self.sides.setWordWrap(True)
         f.addRow(self.sides)
-        root.addWidget(g)
+        t_machine.addWidget(g)
 
         # ---------------------------------------------------------------- motors
         m = card("Motors and gearbox")
@@ -56,7 +64,7 @@ class CalibrationPage(QWidget):
         mf.addRow("Gearbox ratio", self.gear)
         self.spr = QLabel(""); self.spr.setObjectName("mono")
         mf.addRow("Steps per arm revolution", self.spr)
-        root.addWidget(m)
+        t_machine.addWidget(m)
 
         # ---------------------------------------------------------------- axes
         a = card("Axes")
@@ -69,7 +77,7 @@ class CalibrationPage(QWidget):
         self.tmin = spin(-180, 180, -30.0, 1, " deg"); self.tmax = spin(-180, 180, 80.0, 1, " deg")
         ag.addWidget(QLabel("Arm angle limits ?"), 2, 0); ag.addWidget(self.tmin, 2, 1); ag.addWidget(self.tmax, 2, 3)
         ag.addWidget(QLabel("to"), 2, 2)
-        root.addWidget(a)
+        t_home.addWidget(a)
 
         # ---------------------------------------------------------------- home
         h = card("Home position")
@@ -84,7 +92,7 @@ class CalibrationPage(QWidget):
         self.fit_btn.setToolTip("Assumes the real arms are exactly at this XYZ when the limit switches trigger. Measure first!")
         self.fit_btn.clicked.connect(self._fit_offsets)
         hg.addWidget(self.fit_btn, 3, 0, 1, 6)
-        root.addWidget(h)
+        t_home.addWidget(h)
 
         # ---------------------------------------------------------------- workspace
         w = card("Workspace box  (moves outside it are refused)")
@@ -95,15 +103,13 @@ class CalibrationPage(QWidget):
             self.ws[ax] = (lo, hi)
             wg.addWidget(QLabel(ax.upper()), r, 0); wg.addWidget(lo, r, 1); wg.addWidget(QLabel("to"), r, 2); wg.addWidget(hi, r, 3)
         self.reach = CheckLabel(); wg.addWidget(self.reach, 3, 0, 1, 4)
-        root.addWidget(w)
+        t_machine.addWidget(w)
 
         # ---------------------------------------------------------------- camera -> robot
-        c = card("Camera → robot calibration")
-        cl = QVBoxLayout(c)
-        self.cam_status = QLabel(""); self.cam_status.setWordWrap(True)
-        self.cam_matrix = QLabel(""); self.cam_matrix.setObjectName("mono")
-        cl.addWidget(self.cam_status); cl.addWidget(self.cam_matrix)
-        root.addWidget(c)
+        self.camera_wizard = CameraWizard(ctx, camera)
+        t_cam.addWidget(self.camera_wizard)
+        t_cam.addStretch(1)
+        t_machine.addStretch(1); t_home.addStretch(1)
 
         # ---------------------------------------------------------------- buttons
         row = QHBoxLayout()
@@ -112,7 +118,6 @@ class CalibrationPage(QWidget):
         self.msg = QLabel(""); self.msg.setObjectName("muted"); self.msg.setWordWrap(True)
         row.addWidget(self.apply_btn); row.addWidget(self.revert_btn); row.addWidget(self.msg, 1)
         root.addLayout(row)
-        root.addStretch(1)
 
         for wdg in (self.base_r, self.eff_r, self.bicep, self.fore, self.full_steps, self.micro, self.gear, self.tmin, self.tmax,
                     *self.offs, *self.home_xyz, *[x for pair in self.ws.values() for x in pair]):
@@ -142,16 +147,10 @@ class CalibrationPage(QWidget):
         for b in blocked:
             b.blockSignals(False)
         self._derive()
-        tf = self.ctx.calibration
-        if tf.valid:
-            self.cam_status.setText(f"Calibrated on {tf.date} from {tf.n_points} points, error {tf.rms_mm:.1f} mm (RMS).")
-            self.cam_matrix.setText("R = " + "\n    ".join("  ".join(f"{v:7.4f}" for v in row) for row in tf.R) +
-                                    "\nt = " + "  ".join(f"{v:8.1f}" for v in tf.t))
-        else:
-            self.cam_status.setText("NOT CALIBRATED. Until this is done the robot columns in the Camera page stay empty, the effector "
-                                    "crosshair is hidden and 'Move above selected' is disabled. The guided procedure (jog the effector "
-                                    "to several points the camera can see) is the next addition.")
-            self.cam_matrix.setText("")
+
+    def _box(self) -> Workspace:
+        return Workspace(tuple(self.ws["x"][i].value() for i in (0, 1)), tuple(self.ws["y"][i].value() for i in (0, 1)),
+                         tuple(self.ws["z"][i].value() for i in (0, 1)))
 
     def _kin(self) -> DeltaKinematics:
         return DeltaKinematics(self.base_r.value(), self.eff_r.value(), self.bicep.value(), self.fore.value())
@@ -175,8 +174,7 @@ class CalibrationPage(QWidget):
             else:
                 self.home_check.set("Offsets are consistent with the home XYZ.", True)
         # is the whole workspace box reachable?
-        box = Workspace(tuple(self.ws["x"][i].value() for i in (0, 1)), tuple(self.ws["y"][i].value() for i in (0, 1)),
-                        tuple(self.ws["z"][i].value() for i in (0, 1)))
+        box = self._box()
         pts = [[lo + (hi - lo) * i / 4 for i in range(5)] for lo, hi in (box.x, box.y, box.z)]
         bad = 0
         for x, y, z in itertools.product(*pts):

@@ -45,6 +45,23 @@ DEFAULTS: Dict[str, Any] = {
     "connection": {"port": "", "baud": 115200, "simulate_esp32": False},
     "camera": {"host": "192.168.137.128", "port": 8485, "simulate": False, "approach_height_mm": 60.0,
                "show_effector_crosshair": True},
+    "harvest": {                        # automatic picking (Phase 6). Every number here is a starting guess: tune on the real machine.
+        "allowed_classes": ["strawberry"],     # ONLY these YOLO classes may ever be picked (stock YOLO has none -> refuses)
+        "min_confidence": 0.5,
+        "min_depth_valid_fraction": 0.5,       # share of pixels in the box that had a valid depth
+        "stable_frames": 5,                    # a berry must be seen in this many consecutive frames ...
+        "max_jitter_mm": 6.0,                  # ... at a position that stays within this many mm
+        "match_radius_mm": 20.0,               # detections closer than this to a track belong to it
+        "approach_height_mm": 60.0,            # hover this far ABOVE the berry before descending
+        "grasp_offset_mm": [0.0, 0.0, 0.0],    # added to the berry position (the camera sees the front surface, not the centre)
+        "dwell_s": 0.8,                        # wait after vacuum on, before lifting
+        "release_s": 0.6,                      # wait after vacuum off at the drop point
+        "drop_xyz_mm": [90.0, 0.0, -250.0],    # where picked berries are dropped (must be inside the workspace)
+        "max_picks": 5,                        # stop after this many pick attempts (safety limit per run)
+        "idle_timeout_s": 30.0,                # stop if no stable target appears for this long
+        "frame_timeout_s": 2.0,                # stop if the camera goes silent for this long
+        "vacuum_enabled": False,               # False = DRY RUN: all moves, no vacuum commands (the firmware has no vacuum yet)
+    },
     "camera_to_robot": None,            # filled by the calibration: {"R": 3x3, "t": 3, "valid": ..., "rms_mm": ...}
     "ui": {"page": "operations"},
 }
@@ -89,6 +106,15 @@ def validate(s: Dict[str, Any]) -> Optional[str]:
                 return f"workspace {ax}: low must be smaller than high"
         if len(s["home"]["xyz_mm"]) != 3:
             return "home needs X, Y and Z"
+        h = s["harvest"]
+        if not isinstance(h["allowed_classes"], list) or not all(isinstance(c, str) and c for c in h["allowed_classes"]):
+            return "harvest.allowed_classes must be a list of class names"
+        if len(h["drop_xyz_mm"]) != 3 or len(h["grasp_offset_mm"]) != 3:
+            return "harvest drop position and grasp offset need X, Y and Z"
+        if not (0.0 <= float(h["min_confidence"]) <= 1.0 and int(h["stable_frames"]) >= 1 and int(h["max_picks"]) >= 1):
+            return "harvest confidence must be 0..1, stable_frames and max_picks at least 1"
+        if not (0.0 <= float(h["approach_height_mm"]) <= 300.0):
+            return "harvest approach height must be 0..300 mm"
     except (KeyError, TypeError, ValueError) as ex:
         return f"settings are incomplete or malformed ({ex})"
     return None
