@@ -28,7 +28,7 @@ Screenshots: `docs/screenshots/`. Page-by-page help: [docs/GUI.md](docs/GUI.md).
 ## What is where
 ```
 Delta_Robot/
-├── README.md, CLAUDE.md, .gitignore     this file; notes for AI assistants; keeps secrets/weights/datasets out of git
+├── LICENSE, README.md, CLAUDE.md, .gitignore   GPL-3.0 text; this file; notes for AI assistants; keeps secrets/weights/datasets out of git
 ├── gui/                  PC program (PyQt6)
 │   ├── Delta_Robot_GUI.py        start this
 │   ├── delta_gui/core/           NO Qt: kinematics, robot controller (ALL motion safety), link (serial + simulated ESP32),
@@ -63,7 +63,7 @@ Delta_Robot/
 | [docs/HARVEST.md](docs/HARVEST.md), [docs/HARVEST_SIM_LOG.txt](docs/HARVEST_SIM_LOG.txt) | how automatic picking decides and stops; a full simulated run |
 | [docs/YOLO_TRAINING.md](docs/YOLO_TRAINING.md) | collecting pictures, labelling, training on Colab, putting the model on the Pi |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | symptom -> cause -> fix |
-| [docs/LICENSES.md](docs/LICENSES.md) | Ultralytics AGPL-3.0, PyQt6 GPL-3.0 and other licences; the open licence decision |
+| [docs/LICENSES.md](docs/LICENSES.md) | Ultralytics AGPL-3.0, PyQt6 GPL-3.0 and other licences; why GPL-3.0 |
 | [docs/PHASE1_REVIEW.md](docs/PHASE1_REVIEW.md) | the bugs and risks found in the original code |
 
 ## Status: what works and what does not
@@ -116,4 +116,4 @@ between them gives its distance. **Calibration:** measuring the camera and robot
 
 ## Credits and licences
 Built from the `greatroboticslab/deltarobot` GUI, camera client, Pi server and firmware (kept in `archive/`). Uses Ultralytics YOLO (**AGPL-3.0**), PyQt6 (**GPL-3.0**), NumPy, OpenCV, PyYAML and pyserial.
-**This project has no licence yet** — see [docs/LICENSES.md](docs/LICENSES.md) for what is required and the choice to make. *(Not legal advice.)*
+This folder is licensed under the **GNU GPL v3** (`LICENSE`). See [docs/LICENSES.md](docs/LICENSES.md) for the third-party licences and what AGPL-3.0 (Ultralytics) adds. *(Not legal advice.)*

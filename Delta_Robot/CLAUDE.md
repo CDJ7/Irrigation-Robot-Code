@@ -117,7 +117,7 @@ See README.md ("Running what exists today") and pi/README.md. Self-tests: `cd pi
 
 ## Open questions for the user
 Confirm DIP table vs driver label + all 3 drivers identical; ToF on CSI or USB (Pi output of docs/PI_SETUP.md step 1+3); vacuum pin when firmware phase starts;
-repo licence; main vs branch+PR for the final push.
+(decided: GPL-3.0 licence for Delta_Robot/, push to branch + PR #5).
 
 ## Phase 5 (calibration tools) -- done in code, simulation only
 core/calibration.py (home_calibration, nudge_steps, ProbeCollector, CameraCalibrationSession, suggest_points), PROBE channel (pi server +
@@ -134,3 +134,5 @@ Sim log: docs/HARVEST_SIM_LOG.txt. Vacuum pin for Phase 7 still NOT given by the
 Vacuum = GPIO 17 active HIGH (user's choice; 35 was input-only). 10k pulldown recommended. Trapezoid accel, V 1/V 0/V?, queued commands during
 homing, debounce, NOT_ENABLED, BUSY for EN/Z while moving, micros() wrap fix. Tests: sh firmware/tests/run_tests.sh (g++ + fake Arduino shim; the
 wrap test reproduces the old bug in a mutated copy). Never flash without asking. Compiled only with g++, not the ESP32 toolchain. Tuning values are guesses.
+
+## Phase 8 -- done. Licence: GPL-3.0 (Delta_Robot/LICENSE, from Debian common-licenses). Docs: README (student), architecture.svg, CALIBRATION, YOLO_TRAINING, TROUBLESHOOTING, LICENSES.

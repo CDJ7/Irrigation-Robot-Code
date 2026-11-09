@@ -1,7 +1,7 @@
 # Licences and credits  (not legal advice)
 
-**This project has no licence yet.** The destination repository (`CDJ7/Irrigation-Robot-Code`) has none either, so by default all rights are reserved and nobody else may reuse the
-code. Pick one deliberately (see below) before sharing it widely.
+**This folder is licensed under the GNU GPL v3** (see `LICENSE` in this folder; chosen by the project owner). The rest of the `Irrigation-Robot-Code` repository has no licence and is not covered.
+The original files in `archive/original_files/` come from `greatroboticslab/deltarobot`: confirm you may republish them (they keep their original terms).
 
 | Component | Licence | How it is used here |
 |---|---|---|
@@ -13,8 +13,9 @@ code. Pick one deliberately (see below) before sharing it widely.
 | **greatroboticslab/deltarobot** | see that repository | The original Tkinter GUI, camera client, Pi server and ESP32 firmware this work upgrades (kept untouched in `archive/original_files/`). Confirm you have the right to republish them. |
 | **Roboflow, CVAT, Google Colab** | their terms | Only if you use them for labelling/training. Do not upload private images. |
 
-## Choosing a licence for this folder (your decision)
-* Because of **Ultralytics AGPL-3.0** and **PyQt6 GPL-3.0**, the simplest consistent choice is **GPL-3.0 or AGPL-3.0** for this project.
+## About the choice of GPL-3.0
+* Because of **Ultralytics AGPL-3.0** and **PyQt6 GPL-3.0**, GPL-3.0 is consistent for the GUI. Note that AGPL-3.0 (Ultralytics, used on the Pi) additionally covers *network use*:
+  if you offer the Pi vision server to other people over a network, offer them its source as AGPL-3.0 requires. GPL-3.0 and AGPL-3.0 code can be combined.
 * A permissive licence (MIT/Apache-2.0) is possible only if you keep the AGPL/GPL parts replaceable (e.g. ship without ultralytics, use PySide6) and say so clearly.
 * If this is coursework or lab work, check the rules of your school or lab before choosing.
 
