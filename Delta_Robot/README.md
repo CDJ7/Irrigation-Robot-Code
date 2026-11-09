@@ -52,10 +52,11 @@ only moves.** The Pi never sends motor commands, and only the PC talks to the ES
 | `CLAUDE.md` | Working notes for AI coding assistants (architecture, hardware, decisions, status). Humans can read it too. | kept up to date |
 | `.gitignore` | Keeps secrets, model weights, datasets, videos and `third_party/` out of git. | — |
 | **`gui/`** | **The program that runs on the Windows PC.** | |
-| `gui/Delta_Robot_GUI.py` | Tkinter control window: connect to the ESP32, move to XYZ, jog, home, raw motor control, a *random-point* camera simulator. Contains the delta **inverse kinematics** (`DeltaKinematics`). | The original **plus one added tab** (Live Camera, view-only); no motion code changed (19 lines added, none removed). To be rebuilt in PyQt6. |
+| `gui/Delta_Robot_GUI.py`, `gui/delta_gui/` | **The new control program (PyQt6)**: dark theme, five pages (Operations, Camera, Calibration, Debug, Settings), a large E-STOP visible on every page, status bar, live camera with detection boxes, robot-frame coordinates and an effector crosshair, simulated ESP32 and simulated camera modes, settings saved to a file. All motion safety is in `delta_gui/core/` and is tested without hardware. See `docs/GUI.md`. | Built and tested offscreen with simulated hardware; **not yet run on your PC or the real robot**. |
+| `gui/Delta_Robot_GUI_tkinter.py` | The previous Tkinter program (the original plus the view-only camera tab), kept until the new one is checked on your PC. | old |
 | `gui/camera_client.py` | Reads the Pi's stream: video (`V`), depth picture (`D`) and detections (`J`). Reports a real connection status, reconnects by itself, keeps its queue bounded. Plain Python (no Tkinter/Qt), so the future PyQt6 GUI can reuse it. | **New version** (the original is in `archive/`). Tested against the real server with a fake camera. |
-| `gui/live_camera_tab.py`, `gui/camera_overlay.py` | A view-only **Live Camera (Pi)** tab for the Tkinter GUI (video with boxes, depth picture, detection table, connection status), and the drawing helpers behind it. | New. Logic tested with a stand-in Tk; **not yet run on a real screen**. |
-| `gui/requirements.txt`, `gui/tests/` | Packages to `pip install` on the PC, and the tests for the camera client and tab. | New. |
+| `gui/live_camera_tab.py` | The Live Camera tab of the **old Tkinter** program. `gui/camera_overlay.py` (box/label/crosshair drawing) is shared with the new one. | old |
+| `gui/requirements.txt`, `gui/tests/` | Packages to `pip install` on the PC, and the tests (core logic, GUI, camera client). | New. |
 | **`pi/`** | **The program that runs on the Raspberry Pi 5.** See `pi/README.md` for setup. | |
 | `pi/pi_camera_server.py` | Vision server: captures the camera once, computes depth, runs YOLO, and streams to any number of clients (the GUI and/or a browser at `http://deltapi.local:5000`). The network protocol is documented at the top of the file. | Written for the **USB stereo camera**; tested only against a synthetic camera. To be reworked around the **Arducam ToF** camera. |
 | `pi/config.yaml` | All settings: camera, depth, YOLO model path, allowed classes, ports. Swapping a trained model is a one-line change. | — |
@@ -71,6 +72,7 @@ only moves.** The Pi never sends motor commands, and only the PC talks to the ES
 | `firmware/Delta_Robot_ESP32/Delta_Robot_ESP32.ino` | Receives text commands over USB, makes the step pulses for the three motors so all arms arrive together, runs homing with limit switches. Open this folder in the Arduino IDE (the sketch must live in a folder of the same name). | **Original, unmodified.** |
 | **`docs/`** | Documentation. | |
 | `docs/PI_SETUP.md` | Step-by-step Raspberry Pi setup: what to check, installing the ToF SDK, testing the camera, the CSI boot overlay, VNC. | checklist, not yet run on the Pi |
+| `docs/GUI.md` | How the new control program works: pages, safety rules, what changed from the old one, settings file, code layout, tests, screenshots. | — |
 | `docs/PROTOCOL.md` | The serial commands (PC ↔ ESP32) and the network messages (Pi → PC). | — |
 | `docs/WIRING.md` | Which ESP32 pin goes where, as read from the firmware. | needs checking against the real wiring |
 | `docs/PHASE1_REVIEW.md` | A review of bugs and risks found in the original code, ranked by how dangerous they are. **Read this before running the robot.** | — |
@@ -85,7 +87,7 @@ projects), model weights (`*.pt`), datasets, videos, and anything with passwords
 |---|---|
 | Pi vision server (stereo USB camera, YOLO, JSON detections, multi-client) | Code written; passes self-tests with a **synthetic** camera. **Not yet run on the real Pi or camera.** |
 | Camera | The Pi's own inspection found **only a USB stereo camera** ("3D Global Shutter Camera", 2 × ~1 MP) and **no ToF camera**. The stereo server fits it; ToF tools are kept in case a ToF camera is connected later. |
-| New PyQt6 GUI | **Not started.** `gui/` is still the original Tkinter program. |
+| New PyQt6 GUI | **Built** and tested offscreen with the simulated ESP32 and camera (`docs/GUI.md`). **Not yet run on your Windows PC or the real robot.** |
 | Calibration tools in the GUI (gearbox, home angles, camera→robot) | **Not started.** |
 | Automated harvesting | **Not started.** |
 | Firmware improvements (acceleration, vacuum, safer homing) | **Not started.** |
@@ -115,8 +117,8 @@ The motors are NEMA 23 steppers behind 47:1 gearboxes. They can hurt you.
 
 **PC (Windows):**
 ```
-pip install pyserial
-python gui/Delta_Robot_GUI.py
+pip install -r gui/requirements.txt
+python gui/Delta_Robot_GUI.py              # add --sim-esp32 to start in simulation
 ```
 
 **Raspberry Pi** (vision server, stereo-camera version): follow `pi/README.md`

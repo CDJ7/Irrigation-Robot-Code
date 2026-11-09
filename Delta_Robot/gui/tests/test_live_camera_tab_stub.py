@@ -128,7 +128,7 @@ print("tab logic OK")
 
 # ---------------------------------------------------------------- the hook in the real GUI file
 sys.modules["serial"] = mock.MagicMock(); sys.modules["serial.tools"] = mock.MagicMock(); sys.modules["serial.tools.list_ports"] = mock.MagicMock()
-import Delta_Robot_GUI as gui   # noqa: E402
+import Delta_Robot_GUI_tkinter as gui   # noqa: E402
 app = gui.DeltaRobotApp.__new__(gui.DeltaRobotApp)
 app.tab_camera, app.root, app.live_camera = mock.MagicMock(), FakeRoot(), None
 app._log = logs.append

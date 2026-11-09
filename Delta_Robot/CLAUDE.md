@@ -58,7 +58,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | Earlier stereo-USB Pi server (pi/) | written; passes synthetic tests only; NOT run on the Pi |
 | 2 Pi set-up (stereo path now; ToF only if one turns up) + VNC | tools written + tested vs stand-in SDK (pi/tof/, docs/PI_SETUP.md); **waiting for the user to run them on the Pi** (no Pi access from here; sudo/boot-config/reboot need approval) |
 | 3 ToF vision server | not started |
-| 4 PyQt6 GUI | not started |
+| 4 PyQt6 GUI | **built + tested offscreen with simulated hardware; not yet run on the user's PC** |
 | 5 Calibration tools | not started |
 | 6 Harvest state machine | not started |
 | 7 Firmware | not started |
@@ -93,6 +93,20 @@ Precision there: 1 px of disparity = 11 mm at 70 cm, 19 mm at 93 cm; typical err
 Small objects: a 30 mm strawberry is ~31 px wide at 70 cm in the 640x480 eye -> YOLO imgsz 320 would halve that; plan imgsz 640 (or
 train on crops) and consider the 1600x600 / 2560x800 camera modes later if precision is insufficient. Camera-to-robot transform is
 calibrated by jogging the effector (Kabsch), so the camera tilt does not need to be measured.
+
+## New PyQt6 GUI (Phase 4 done in code; offscreen/simulated tests only)
+gui/Delta_Robot_GUI.py (entry) + gui/delta_gui/{core,ui}. core = Qt-free: kinematics.py (IK, FK, radius->side, steps), link.py (SerialLink +
+SimulatedESP32Link reproducing firmware quirks), robot.py (ALL motion safety: single command in flight, reply matching, latched E-STOP,
+position-unknown rules, drivers-enabled guard, joint limits, step-rate limit, timeouts), settings.py (~/.delta_robot/settings.json, atomic),
+transform.py (Kabsch camera->robot). ui = theme, drawn icons, pages (operations/camera/calibration/debug/settings), main window with the E-STOP in the
+sidebar (Esc shortcut), camera controller (QThread pump; simulated camera runs the real Pi server in-process). Old Tk GUI kept as
+Delta_Robot_GUI_tkinter.py. Docs: docs/GUI.md + docs/screenshots/.
+Findings: original IK `f`,`e` are triangle SIDE lengths (side = 2*sqrt(3)*radius) -> new GUI takes radii. Tests caught a real bug (guard Result truthiness: a
+refused action was falsy and ignored) -> use `is not None`. Qt NoButtons on styled spin boxes blanks the text -> hide buttons via stylesheet.
+Defaults: workspace +-100 x +-100, Z -350..-210 (fully reachable with rf 150/re 280); theta limits -30..80 UNVERIFIED; step rate 4000/s UNVERIFIED.
+Dev sandbox note: PyQt6 offscreen needs libEGL; a private stub lib (LD_LIBRARY_PATH) was used in the cloud VM only. On the user's PC nothing special.
+NEXT (not started): Phase 5 calibration tools (home angle procedure, camera->robot jog procedure UI), Phase 6 harvest state machine, Phase 7 firmware,
+Phase 8 docs/push decision (main vs branch+PR; repo licence).
 
 ## Calibration status
 Stereo: n/a for ToF. Intrinsics: from SDK (to verify). Home/offsets/HOME_XYZ: uncalibrated (HOME_XYZ placeholder (0,0,-200)).
