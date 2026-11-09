@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
         body = QHBoxLayout(); body.setContentsMargins(0, 0, 0, 0); body.setSpacing(0)
         body.addWidget(self._build_sidebar())
         self.stack = QStackedWidget()
-        self.pages = {"operations": OperationsPage(ctx), "camera": CameraPage(ctx, camera), "calibration": CalibrationPage(ctx),
+        self.pages = {"operations": OperationsPage(ctx), "camera": CameraPage(ctx, camera), "calibration": CalibrationPage(ctx, camera),
                       "debug": DebugPage(ctx), "settings": SettingsPage(ctx)}
         for key, _ in PAGES:
             self.stack.addWidget(scrollable(self.pages[key]))

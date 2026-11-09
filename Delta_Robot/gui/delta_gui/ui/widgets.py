@@ -3,7 +3,7 @@ widgets.py -- small reusable pieces: status pills, a picture view that keeps its
 """
 from typing import Optional
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import (QDoubleSpinBox, QFormLayout, QFrame, QGroupBox, QLabel, QScrollArea, QSizePolicy, QSpinBox,
                              QVBoxLayout, QWidget)
@@ -82,6 +82,22 @@ class ImageView(QLabel):
     def resizeEvent(self, ev) -> None:        # noqa: N802 (Qt naming)
         super().resizeEvent(ev)
         self._rescale()
+
+
+class ClickableImage(ImageView):
+    """An ImageView that reports where you click, in the PICTURE's own pixel coordinates (not the window's)."""
+    clicked = pyqtSignal(int, int)
+
+    def mousePressEvent(self, ev) -> None:        # noqa: N802
+        pm = self._pix
+        shown = self.pixmap()
+        if pm is not None and shown is not None and not shown.isNull() and ev.button() == Qt.MouseButton.LeftButton:
+            scale = shown.width() / pm.width()
+            ox, oy = (self.width() - shown.width()) / 2.0, (self.height() - shown.height()) / 2.0
+            u, v = (ev.position().x() - ox) / scale, (ev.position().y() - oy) / scale
+            if 0 <= u < pm.width() and 0 <= v < pm.height():
+                self.clicked.emit(int(u), int(v))
+        super().mousePressEvent(ev)
 
 
 def scrollable(page: QWidget) -> QScrollArea:

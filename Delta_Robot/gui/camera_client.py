@@ -17,6 +17,8 @@ Message stream (see the top of pi/pi_camera_server.py for the full description):
     'J' = JSON detections, 'V' = JPEG left-eye picture, 'D' = JPEG colourised depth picture
 For every frame the server sends J, V, D in that order, so the V and D that follow a J carry that J's "seq".
 
+Requests to the Pi (optional): send_probe(u, v) makes every J carry "probe": the 3D position at that pixel; clear_probe() stops it.
+
 Items put on the queue (always tuples; the first element says what it is):
     ("STATUS", {"state": "connecting"|"connected"|"disconnected"|"stopped", "message": str})
     ("DET",    {...the whole J message: seq, t, calibrated, model, detections, ...})
@@ -51,6 +53,8 @@ class CameraClient:
         self._status = {"state": "stopped", "message": "not started"}
         self._last_seq: Optional[int] = None
         self.frames_received = 0
+        self._probe: Optional[tuple] = None          # the pixel we asked the Pi to measure (re-sent after a reconnect)
+        self._send_lock = threading.Lock()
 
     # ---------------------------------------------------------------- public
     def start(self, host: str, port: int) -> None:
@@ -68,6 +72,25 @@ class CameraClient:
             t.join(timeout=2.0)
         self._thread = None
         self._set_status("stopped", "disconnected by user")
+
+    def send_probe(self, u: int, v: int) -> None:
+        """Ask the Pi to measure the 3D position at pixel (u, v) of the V picture; the answer arrives in every J as "probe"."""
+        self._probe = (int(u), int(v))
+        self._send_line(f"PROBE {int(u)} {int(v)}")
+
+    def clear_probe(self) -> None:
+        self._probe = None
+        self._send_line("PROBE off")
+
+    def _send_line(self, text: str) -> None:
+        sock = self._sock
+        if sock is None:
+            return                                   # not connected: a stored probe is re-sent when the link comes up
+        try:
+            with self._send_lock:
+                sock.sendall((text + "\n").encode("ascii"))
+        except OSError:
+            pass
 
     def is_connected(self) -> bool:
         """True only while the link is really up (it turns False as soon as the connection drops)."""
@@ -145,6 +168,8 @@ class CameraClient:
                 continue
             attempt = 0
             self._last_seq = None
+            if self._probe is not None:
+                self._send_line(f"PROBE {self._probe[0]} {self._probe[1]}")
             try:
                 self._receive_loop()
             except ConnectionError as ex:

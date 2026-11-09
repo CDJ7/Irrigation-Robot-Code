@@ -59,7 +59,7 @@ Planned: ESP32 moves to Wi-Fi later -> keep the GUI's serial layer behind a smal
 | 2 Pi set-up (stereo path now; ToF only if one turns up) + VNC | tools written + tested vs stand-in SDK (pi/tof/, docs/PI_SETUP.md); **waiting for the user to run them on the Pi** (no Pi access from here; sudo/boot-config/reboot need approval) |
 | 3 ToF vision server | not started |
 | 4 PyQt6 GUI | **built + tested offscreen with simulated hardware; not yet run on the user's PC** |
-| 5 Calibration tools | not started |
+| 5 Calibration tools | built + tested in simulation (home wizard, camera->robot wizard, PROBE protocol); not run on real robot/camera |
 | 6 Harvest state machine | not started |
 | 7 Firmware | not started |
 | 8 Docs + final push | partly (README, docs); final push needs user's choice main vs branch/PR |
@@ -105,7 +105,7 @@ Findings: original IK `f`,`e` are triangle SIDE lengths (side = 2*sqrt(3)*radius
 refused action was falsy and ignored) -> use `is not None`. Qt NoButtons on styled spin boxes blanks the text -> hide buttons via stylesheet.
 Defaults: workspace +-100 x +-100, Z -350..-210 (fully reachable with rf 150/re 280); theta limits -30..80 UNVERIFIED; step rate 4000/s UNVERIFIED.
 Dev sandbox note: PyQt6 offscreen needs libEGL; a private stub lib (LD_LIBRARY_PATH) was used in the cloud VM only. On the user's PC nothing special.
-NEXT (not started): Phase 5 calibration tools (home angle procedure, camera->robot jog procedure UI), Phase 6 harvest state machine, Phase 7 firmware,
+NEXT: Phase 6 harvest state machine, Phase 7 firmware,
 Phase 8 docs/push decision (main vs branch+PR; repo licence).
 
 ## Calibration status
@@ -118,3 +118,8 @@ See README.md ("Running what exists today") and pi/README.md. Self-tests: `cd pi
 ## Open questions for the user
 Confirm DIP table vs driver label + all 3 drivers identical; ToF on CSI or USB (Pi output of docs/PI_SETUP.md step 1+3); vacuum pin when firmware phase starts;
 repo licence; main vs branch+PR for the final push.
+
+## Phase 5 (calibration tools) -- done in code, simulation only
+core/calibration.py (home_calibration, nudge_steps, ProbeCollector, CameraCalibrationSession, suggest_points), PROBE channel (pi server +
+camera_client.send_probe), ui/pages/home_wizard.py + camera_wizard.py inside the Calibration page tabs. Tests: test_core_calibration,
+test_camera_probe, test_gui_wizards. Wizard moves always ask first. Lessons: chain commands with && and commit only when ALL tests pass.

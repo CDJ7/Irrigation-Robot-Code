@@ -110,9 +110,10 @@ class DeltaKinematics:
 @dataclass
 class Workspace:
     """Axis-aligned box of allowed XYZ targets (mm). A move outside it is refused BEFORE kinematics even runs."""
-    x: Tuple[float, float] = (-150.0, 150.0)
-    y: Tuple[float, float] = (-150.0, 150.0)
-    z: Tuple[float, float] = (-400.0, -150.0)
+    # same as the settings defaults (a box that is fully reachable with the default arm lengths)
+    x: Tuple[float, float] = (-100.0, 100.0)
+    y: Tuple[float, float] = (-100.0, 100.0)
+    z: Tuple[float, float] = (-350.0, -210.0)
 
     def violation(self, x: float, y: float, z: float) -> Optional[str]:
         for name, v, (lo, hi) in (("X", x, self.x), ("Y", y, self.y), ("Z", z, self.z)):

@@ -44,6 +44,13 @@ JSON of a 'J' message:
       ]
     }
 
+CLIENT -> SERVER (optional, one text line each, newline-terminated; unknown lines are ignored):
+    PROBE u v      "measure the 3D position at pixel (u, v) of the V picture". While a probe is set, every J contains
+                   "probe": {"u","v","xyz_mm": [X,Y,Z] or null,"disparity","valid_fraction"} (median over a small patch).
+                   Used by the GUI's camera-to-robot calibration (click the effector mark, read its camera XYZ).
+    PROBE off      stop probing (the key disappears from J). The probe is also cleared when the last client disconnects.
+    (One probe is shared by all clients: the most recent request wins.)
+
 BROWSER VIEWER (optional, default port 5000):  http://deltapi.local:5000
     /          page with the live stream      /stream   MJPEG (annotated + depth)
     /snapshot.jpg  one annotated frame        /status   JSON with fps etc.
@@ -343,6 +350,7 @@ class Hub:
         self.tcp_clients = 0
         self.http_clients = 0
         self.stopped = False
+        self.probe: Optional[Tuple[int, int]] = None      # pixel the GUI asked to measure (see PROBE in the protocol notes)
 
     def publish(self, b: Bundle) -> None:
         with self.cond:
@@ -551,6 +559,13 @@ class VisionPipeline(threading.Thread):
             hh, ww = disp.shape
             probe = box_depth(disp, self.matcher, self.rect,
                               (ww / 2 - 30, hh / 2 - 30, ww / 2 + 30, hh / 2 + 30), cfgd)
+            req = self.hub.probe
+            user_probe = None
+            if req is not None:                                  # a client asked for the depth at one pixel
+                pu, pv = req
+                pr = box_depth(disp, self.matcher, self.rect, (pu - 8, pv - 8, pu + 8, pv + 8), cfgd)
+                user_probe = {"u": pu, "v": pv, "xyz_mm": pr["xyz_mm"], "disparity": pr["disparity"],
+                              "valid_fraction": pr["depth_valid_fraction"]}
 
             self.seq += 1
             b = Bundle(self.seq, capture_ts)
@@ -572,6 +587,8 @@ class VisionPipeline(threading.Thread):
                 "server_fps": round(self.fps, 1), "timing_ms": timing,
                 "center_probe": {"xyz_mm": probe["xyz_mm"], "disparity": probe["disparity"]},
                 "detections": dets}
+            if user_probe is not None:
+                meta["probe"] = user_probe
             b.status = {k: meta[k] for k in ("seq", "calibrated", "model", "model_has_allowed_class",
                                              "server_fps", "timing_ms")}
             b.status.update({"center_probe": meta["center_probe"], "camera_ok": True, "tcp_clients": n_tcp, "http_clients": n_http,
@@ -610,6 +627,20 @@ class VisionPipeline(threading.Thread):
 # =========================================================
 #   NETWORK: TCP clients and the browser viewer
 # =========================================================
+def handle_client_line(hub: "Hub", line: str) -> None:
+    """One request line from a client. Only PROBE is defined; anything else (or malformed) is ignored."""
+    parts = line.split()
+    if len(parts) == 2 and parts[0].upper() == "PROBE" and parts[1].lower() == "off":
+        hub.probe = None
+    elif len(parts) == 3 and parts[0].upper() == "PROBE":
+        try:
+            u, v = int(parts[1]), int(parts[2])
+        except ValueError:
+            return
+        if 0 <= u < 10000 and 0 <= v < 10000:
+            hub.probe = (u, v)
+
+
 def serve_tcp_client(conn: socket.socket, addr, hub: Hub, send_timeout: float) -> None:
     log.info("TCP client connected: %s", addr)
     conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -619,8 +650,29 @@ def serve_tcp_client(conn: socket.socket, addr, hub: Hub, send_timeout: float) -
     conn.settimeout(send_timeout)      # a stuck client raises socket.timeout -> dropped
     hub.adjust("tcp", +1)
     last_seq = 0
+    closed = threading.Event()
+
+    def reader() -> None:
+        """Reads the client's (rare, tiny) request lines; also notices a closing client straight away."""
+        buf = b""
+        while not hub.stopped and not closed.is_set():
+            try:
+                data = conn.recv(256)
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            if not data:
+                break
+            buf = (buf + data)[-512:]                       # bounded: a flood of garbage cannot grow memory
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                handle_client_line(hub, line.decode("ascii", errors="ignore").strip())
+        closed.set()
+
+    threading.Thread(target=reader, daemon=True, name="tcp-reader").start()
     try:
-        while not hub.stopped:
+        while not hub.stopped and not closed.is_set():
             b = hub.wait_newer(last_seq, 1.0)
             if b is None:
                 continue
@@ -631,7 +683,10 @@ def serve_tcp_client(conn: socket.socket, addr, hub: Hub, send_timeout: float) -
     except OSError:
         pass                            # disconnect or timeout
     finally:
+        closed.set()
         hub.adjust("tcp", -1)
+        if hub.tcp_clients == 0:
+            hub.probe = None                                # nobody is watching: forget the probe
         conn.close()
         log.info("TCP client gone: %s", addr)
 

@@ -52,6 +52,18 @@ Each detection: `class`, `class_id`, `confidence`, `allowed` (is the class on th
 Camera frame: **X right, Y down, Z out of the lens, millimetres.** A client must refuse to pick when
 `calibrated` is false or `model_has_allowed_class` is false.
 
+### Requests from the PC to the Pi (optional, text lines)
+
+The PC may send newline-terminated text lines on the same TCP connection. The Pi never acts on them except to measure.
+
+| Line | Meaning |
+|---|---|
+| `PROBE u v` | Measure the 3D position at pixel (u, v) of the `V` picture (median disparity in a 17x17 window). Every following `J` carries `"probe": {"u","v","xyz_mm"}`; `xyz_mm` is `null` when there is no valid depth there. |
+| `PROBE off` | Stop probing. |
+
+There is one shared probe (the most recent request wins); it is cleared when the last client disconnects. The GUI's camera-to-robot
+calibration wizard uses it. Pixels in the left-edge band (about one search range wide) have no stereo depth by design.
+
 Browser viewer (optional): `http://deltapi.local:5000` (`/stream`, `/snapshot.jpg`, `/status`).
 
 *Note:* this protocol was designed with the stereo camera. The ToF version will keep the same messages; `disparity`
