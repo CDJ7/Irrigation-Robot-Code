@@ -15,6 +15,8 @@ from camera_client import CameraClient
 from camera_overlay import draw_detections, fit_inside, status_colour, summarize_frame
 
 DEFAULT_HOST = "192.168.137.128"   # the Pi on the Ethernet-sharing link (it can change; edit it in the box)
+KNOWN_HOSTS = ["192.168.137.128",  # Pi on the Windows PC's shared Ethernet
+               "10.80.93.185"]     # Pi on Wi-Fi
 DEFAULT_PORT = 8485
 PANEL_W, PANEL_H = 460, 345        # each picture is shrunk to fit this box
 
@@ -48,7 +50,7 @@ class LiveCameraTab:
         top.pack(fill="x", **pad)
         ttk.Label(top, text="Pi address:").grid(row=0, column=0, **pad)
         self.host_var = tk.StringVar(value=DEFAULT_HOST)
-        ttk.Entry(top, textvariable=self.host_var, width=18).grid(row=0, column=1, **pad)
+        ttk.Combobox(top, textvariable=self.host_var, values=KNOWN_HOSTS, width=18).grid(row=0, column=1, **pad)
         ttk.Label(top, text="Port:").grid(row=0, column=2, **pad)
         self.port_var = tk.StringVar(value=str(DEFAULT_PORT))
         ttk.Entry(top, textvariable=self.port_var, width=7).grid(row=0, column=3, **pad)
