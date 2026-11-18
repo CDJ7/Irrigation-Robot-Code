@@ -135,4 +135,13 @@ Vacuum = GPIO 17 active HIGH (user's choice; 35 was input-only). 10k pulldown re
 homing, debounce, NOT_ENABLED, BUSY for EN/Z while moving, micros() wrap fix. Tests: sh firmware/tests/run_tests.sh (g++ + fake Arduino shim; the
 wrap test reproduces the old bug in a mutated copy). Never flash without asking. Compiled only with g++, not the ESP32 toolchain. Tuning values are guesses.
 
+## Phase 9 -- strawberry detector + SAC picking policy (2026-11-18, PC only; see training/README.md)
+User: vision-driven picking must use a **SAC policy**. Decision (user chose): SAC outputs closed-loop X/Y/Z steps from YOLO+stereo
+detections (NOT pixels); every step still goes through Robot.move_xyz. Camera confirmed by user: ELP-USB3DGS800P-V83 (OV9281, MONO,
+global shutter) = the 32e4:9282 stereo camera already in config. Shared code: gui/delta_gui/core/sac_policy.py (build_observation,
+BerryMemory, speed limit, NumpyPolicy; OBS_VERSION 2), tests/test_core_sac_policy.py. Training: training/{yolo,sac}/ with its own
+.venv (torch/ultralytics/SB3; the GUI venv stays numpy-only). Data: Zenodo 6126677 CC BY 4.0 only (user declined unlicensed Strawba).
+Status: detector trained (test mAP50 0.84); SAC v3 trained; v4 (top-down success definition) NOT started -- user will finish later.
+Not integrated into the Harvest page yet. Now working on a Linux PC (ESP32 on /dev/ttyUSB0, user in dialout); Pi offline this session.
+
 ## Phase 8 -- done. Licence: GPL-3.0 (Delta_Robot/LICENSE, from Debian common-licenses). Docs: README (student), architecture.svg, CALIBRATION, YOLO_TRAINING, TROUBLESHOOTING, LICENSES.

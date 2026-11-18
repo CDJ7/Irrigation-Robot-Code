@@ -23,3 +23,9 @@ datasets/
 *.mp4
 *.avi
 *.mov
+
+# training (Delta_Robot/training): environment, downloaded data, run outputs
+.venv/
+training/sac/runs/
+training/yolo/runs/
+*.npz.tmp
