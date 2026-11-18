@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage
-from PyQt6.QtWidgets import (QAbstractItemView, QCheckBox, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
+from PyQt6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
                              QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
 
 from camera_overlay import draw_crosshair, draw_detections, summarize_frame
@@ -45,7 +45,13 @@ class CameraPage(QWidget):
         tl = QGridLayout(top)
         cam = ctx.settings.data["camera"]
         tl.addWidget(QLabel("Pi address"), 0, 0)
-        self.host = QLineEdit(cam["host"]); self.host.setMinimumWidth(150); tl.addWidget(self.host, 0, 1)
+        self.host = QComboBox(); self.host.setEditable(True); self.host.setMinimumWidth(170)
+        for h in cam.get("known_hosts", []):
+            self.host.addItem(str(h))
+        self.host.setCurrentText(cam["host"])
+        self.host.setToolTip("Pick a saved address or type a new one.\n"
+                             "192.168.137.128 = Pi on the Windows PC's shared Ethernet\n10.80.93.185 = Pi on Wi-Fi")
+        tl.addWidget(self.host, 0, 1)
         tl.addWidget(QLabel("Port"), 0, 2)
         self.port = QLineEdit(str(cam["port"])); self.port.setMaximumWidth(80); tl.addWidget(self.port, 0, 3)
         self.connect_btn = QPushButton("Connect"); self.connect_btn.setObjectName("primary"); self.connect_btn.clicked.connect(self._toggle)
@@ -134,7 +140,8 @@ class CameraPage(QWidget):
             except ValueError:
                 QMessageBox.warning(self, "Camera", "The port must be a number.")
                 return
-            cam["host"], cam["port"] = self.host.text().strip(), port
+            cam["host"], cam["port"] = self.host.currentText().strip(), port
+            self._remember_host(cam["host"])
             self.camera.start(cam["host"], port)
         self.connect_btn.setText("Disconnect")
 
@@ -254,9 +261,16 @@ class CameraPage(QWidget):
                                 f"({self.approach.value():.0f} mm above the target)?") == QMessageBox.StandardButton.Yes:
             self.robot.move_xyz(*tgt, source="camera")
 
+    def _remember_host(self, host: str) -> None:
+        """A newly typed address is added to the drop-down and saved with the settings."""
+        known = self.ctx.settings.data["camera"].setdefault("known_hosts", [])
+        if host and host not in known:
+            known.append(host)
+            self.host.addItem(host)
+
     def save_to_settings(self):
         cam = self.ctx.settings.data["camera"]
-        cam["host"] = self.host.text().strip() or cam["host"]
+        cam["host"] = self.host.currentText().strip() or cam["host"]
         try:
             cam["port"] = int(self.port.text())
         except ValueError:

@@ -44,7 +44,10 @@ DEFAULTS: Dict[str, Any] = {
     },
     "connection": {"port": "", "baud": 115200, "simulate_esp32": False},
     "camera": {"host": "192.168.137.128", "port": 8485, "simulate": False, "approach_height_mm": 60.0,
-               "show_effector_crosshair": True},
+               "show_effector_crosshair": True,
+               # addresses offered in the "Pi address" drop-down (you can still type any other one):
+               # 192.168.137.128 = Pi on the Windows PC's shared Ethernet, 10.80.93.185 = Pi on Wi-Fi
+               "known_hosts": ["192.168.137.128", "10.80.93.185"]},
     "harvest": {                        # automatic picking (Phase 6). Every number here is a starting guess: tune on the real machine.
         "allowed_classes": ["strawberry"],     # ONLY these YOLO classes may ever be picked (stock YOLO has none -> refuses)
         "min_confidence": 0.5,
